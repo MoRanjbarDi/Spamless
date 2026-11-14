@@ -63,6 +63,19 @@
 
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/spam"
+            style="@style/DrawerRow">
+            <ImageView
+                android:id="@+id/spamIcon"
+                style="@style/DrawerIcon"
+                android:src="@drawable/ic_block_white_24dp"
+                tools:tint="?android:attr/textColorSecondary" />
+            <com.moez.QKSMS.common.widget.QkTextView
+                style="@style/DrawerText"
+                android:text="@string/title_spam" />
+        </LinearLayout>
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"

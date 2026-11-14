@@ -47,7 +47,8 @@ fun <T : RealmObject> RealmResults<T>.asObservable(): Observable<RealmResults<T>
 
 fun <T : RealmObject> RealmQuery<T>.anyOf(fieldName: String, values: LongArray): RealmQuery<T> {
     return when (values.isEmpty()) {
-        true -> equalTo(fieldName, -1L)
+        // IDs may be negative for virtual folders. An empty set must never select a row.
+        true -> beginGroup().equalTo(fieldName, 0L).notEqualTo(fieldName, 0L).endGroup()
         false -> `in`(fieldName, values.toTypedArray())
     }
 }

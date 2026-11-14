@@ -166,7 +166,7 @@
     <string name="backup_disclaimer">Attualmente Backup e Restore supportano solo gli SMS. Il supporto per gli MMS ed i backup schedulati arriverà presto!</string>
     <string name="backup_now">Backup adesso</string>
     <string name="backup_progress_parsing">L\'analisi del backup&#8230;</string>
-    <string name="backup_progress_running">%d/%d messaggi</string>
+    <string name="backup_progress_running">%1$d/%2$d messaggi</string>
     <string name="backup_progress_saving">Salvataggio backup&#8230;</string>
     <string name="backup_progress_syncing">Sincronizzazione messaggi&#8230;</string>
     <string name="backup_progress_finished">Terminato!</string>
@@ -251,7 +251,7 @@
     <string name="settings_sync_title">Sincronizza i messaggi</string>
     <string name="settings_sync_summary">Risincronizza i tuoi messaggi con il database SMS Android nativo</string>
     <string name="settings_about_title">Informazioni su QKSMS</string>
-    <string name="settings_version">Versione %s %s %s</string>
+    <string name="settings_version">Versione %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">Registrazione del debug attivata</string>
     <string name="settings_logging_disabled">Registrazione del debug disattivata</string>
     <string name="settings_delay_duration_hint">Inserisci la durata (in secondi)</string>

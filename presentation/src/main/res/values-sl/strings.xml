@@ -170,7 +170,7 @@
     <string name="backup_disclaimer">Trenutno so za ustvarjanje in obnovo varnostnih kopij podprta le sporočila SMS. MMS podpora in varnostne kopije pridejo kmalu!</string>
     <string name="backup_now">Ustvari varnostno kopijo</string>
     <string name="backup_progress_parsing">Razčlenjevanje varnostne kopije&#8230;</string>
-    <string name="backup_progress_running">%d/%d sporočil</string>
+    <string name="backup_progress_running">%1$d/%2$d sporočil</string>
     <string name="backup_progress_saving">Shranjevanje varnostne kopije&#8230;</string>
     <string name="backup_progress_syncing">Sinhroniziranje sporočil&#8230;</string>
     <string name="backup_progress_finished">Končano!</string>
@@ -257,7 +257,7 @@
     <string name="settings_sync_title">Sinhroniziraj sporočila</string>
     <string name="settings_sync_summary">Znova sinhroniziraj sporočila s sistemsko SMS bazo</string>
     <string name="settings_about_title">Več o QKSMS</string>
-    <string name="settings_version">Različica %s %s %s</string>
+    <string name="settings_version">Različica %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">Beleženje dnevnika za odpravljanje napak omogočeno</string>
     <string name="settings_logging_disabled">Beleženje dnevnika za odpravljanje napak onemogočeno</string>
     <string name="settings_delay_duration_hint">Vnesi trajanje (v sekundah)</string>

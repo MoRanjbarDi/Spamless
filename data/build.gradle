@@ -22,6 +22,7 @@ apply plugin: 'kotlin-kapt'
 
 android {
     compileSdkVersion 29
+    buildToolsVersion "29.0.3"
     publishNonDefault true
     flavorDimensions "analytics"
 
@@ -66,6 +67,9 @@ dependencies {
     implementation "io.reactivex.rxjava2:rxandroid:$rxandroid_version"
     implementation "io.reactivex.rxjava2:rxjava:$rxjava_version"
     implementation "io.reactivex.rxjava2:rxkotlin:$rxkotlin_version"
+
+    // The isolated provider integration tests use Android's optional mock framework.
+    androidTestCompileOnly files("${android.sdkDirectory}/platforms/${android.compileSdkVersion}/optional/android.test.mock.jar")
 
     // testing
     androidTestImplementation("androidx.test.espresso:espresso-core:$espresso_version", {

@@ -28,6 +28,11 @@ interface ConversationRepository {
 
     fun getConversations(archived: Boolean = false): RealmResults<Conversation>
 
+    fun getSpamConversations(): RealmResults<Conversation>
+
+    /** Re-evaluates stored messages after filtering preferences change or on first upgrade. */
+    fun reclassifySpam(): List<Long>
+
     fun getConversationsSnapshot(): List<Conversation>
 
     /**

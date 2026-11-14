@@ -166,7 +166,7 @@
     <string name="backup_disclaimer">I øjeblikket understøtter Sikkerhedskopiering og Gendannelse kun SMS. MMS-understøttelse og planlagte sikkerhedskopieringer kommer snart!</string>
     <string name="backup_now">Sikkerhedskopiér nu</string>
     <string name="backup_progress_parsing">Analyserer sikkerhedskopi&#8230;</string>
-    <string name="backup_progress_running">%d/%d beskeder</string>
+    <string name="backup_progress_running">%1$d/%2$d beskeder</string>
     <string name="backup_progress_saving">Gemme sikkerhedskopi&#8230;</string>
     <string name="backup_progress_syncing">Synkroniserer beskeder&#8230;</string>
     <string name="backup_progress_finished">Færdig!</string>
@@ -251,7 +251,7 @@
     <string name="settings_sync_title">Beskedsynkronisering</string>
     <string name="settings_sync_summary">Gen-synkroniéer beskeder med den indbyggede Android SMS-database</string>
     <string name="settings_about_title">Om QKSMS</string>
-    <string name="settings_version">Version %s %s %s</string>
+    <string name="settings_version">Version %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">Fejlfindingslogning aktiveret</string>
     <string name="settings_logging_disabled">Fejlfindingslogning deaktiveret</string>
     <string name="settings_delay_duration_hint">Angiv varighed (sekunder)</string>

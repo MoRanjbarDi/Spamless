@@ -166,7 +166,7 @@
     <string name="backup_disclaimer">Actualmente, sólo los SMS son soportados por la copia de seguridad y restauración. ¡El soporte para MMS y las copias de seguridad programadas se realizarán pronto!</string>
     <string name="backup_now">Copiar ahora</string>
     <string name="backup_progress_parsing">Analizando copia de seguridad&#8230;</string>
-    <string name="backup_progress_running">%d/%d mensajes</string>
+    <string name="backup_progress_running">%1$d/%2$d mensajes</string>
     <string name="backup_progress_saving">Guardando copia de seguridad&#8230;</string>
     <string name="backup_progress_syncing">Sincronizando mensajes&#8230;</string>
     <string name="backup_progress_finished">¡Terminado!</string>
@@ -251,7 +251,7 @@
     <string name="settings_sync_title">Sincronizar mensajes</string>
     <string name="settings_sync_summary">Vuelve a sincronizar tus mensajes con la base de datos nativa de Android SMS</string>
     <string name="settings_about_title">Acerca de QKSMS</string>
-    <string name="settings_version">Versión %s %s %s</string>
+    <string name="settings_version">Versión %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">Registro de depuración activado</string>
     <string name="settings_logging_disabled">Registro de depuración desactivado</string>
     <string name="settings_delay_duration_hint">Introduzca la duración (segundos)</string>

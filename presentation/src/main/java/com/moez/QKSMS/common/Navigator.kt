@@ -18,6 +18,7 @@
  */
 package com.moez.QKSMS.common
 
+import com.moez.QKSMS.util.SpamThread
 import android.app.Activity
 import android.app.role.RoleManager
 import android.content.*
@@ -112,7 +113,7 @@ class Navigator @Inject constructor(
 
     fun showConversationKeySettings(threadId: Long) {
         val intent = Intent(context, KeySettingsActivity::class.java)
-            .putExtra("threadId", threadId)
+            .putExtra("threadId", SpamThread.providerId(threadId))
         startActivity(intent)
     }
 
@@ -125,7 +126,7 @@ class Navigator @Inject constructor(
 
     fun showConversationInfo(threadId: Long) {
         val intent = Intent(context, ConversationInfoActivity::class.java)
-        intent.putExtra("threadId", threadId)
+        intent.putExtra("threadId", SpamThread.providerId(threadId))
         startActivity(intent)
     }
 
@@ -280,7 +281,7 @@ class Navigator @Inject constructor(
 
     fun showNotificationSettings(threadId: Long = 0) {
         val intent = Intent(context, NotificationPrefsActivity::class.java)
-        intent.putExtra("threadId", threadId)
+        intent.putExtra("threadId", SpamThread.providerId(threadId))
         startActivity(intent)
     }
 

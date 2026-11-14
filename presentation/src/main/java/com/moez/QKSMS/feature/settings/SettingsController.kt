@@ -118,6 +118,46 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
                 .subscribe { activity?.recreate() }
     }
 
+    private fun renderSpamSettings() {
+        iranAdsSpam.checkbox.isChecked = prefs.iranAdsSpam.get()
+        customSpamRegex.summary = prefs.customSpamRegex.get().takeIf { it.isNotBlank() }
+            ?: context.getString(R.string.spam_custom_regex_summary)
+        spamArrivalSound.summary = context.resources.getStringArray(R.array.spam_arrival_sounds)[
+            prefs.spamArrivalSound.get().coerceIn(0, 2)]
+    }
+
+    private fun showSpamRegexDialog() {
+        val input = android.widget.EditText(activity!!).apply {
+            setText(prefs.customSpamRegex.get())
+            setSingleLine(false)
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or
+                android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            setTextDirection(View.TEXT_DIRECTION_LTR)
+        }
+        val dialog = AlertDialog.Builder(activity!!)
+            .setTitle(R.string.spam_custom_regex)
+            .setMessage(R.string.spam_custom_regex_summary)
+            .setView(input)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(android.R.string.ok, null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val regex = input.text.toString()
+                val error = com.moez.QKSMS.util.SpamFilter.validationError(regex)
+                if (error != null) {
+                    input.error = context.getString(R.string.spam_regex_error, error)
+                } else {
+                    prefs.customSpamRegex.set(regex)
+                    renderSpamSettings()
+                    dialog.dismiss()
+                }
+            }
+        }
+        dialog.show()
+    }
+
     override fun onViewCreated() {
         preferences.postDelayed({ preferences?.animateLayoutChanges = true }, 100)
 
@@ -132,6 +172,24 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
         mmsSizeDialog.adapter.setData(R.array.mms_sizes, R.array.mms_sizes_ids)
         deleteEncryptedAfterDialog.adapter.setData(R.array.delete_message_after_labels)
 
+        renderSpamSettings()
+        iranAdsSpam.setOnClickListener {
+            prefs.iranAdsSpam.set(!prefs.iranAdsSpam.get())
+            renderSpamSettings()
+        }
+        customSpamRegex.setOnClickListener { showSpamRegexDialog() }
+        spamArrivalSound.setOnClickListener {
+            AlertDialog.Builder(activity!!)
+                .setTitle(R.string.spam_arrival_sound)
+                .setSingleChoiceItems(R.array.spam_arrival_sounds, prefs.spamArrivalSound.get()) { dialog, which ->
+                    prefs.spamArrivalSound.set(which)
+                    renderSpamSettings()
+                    dialog.dismiss()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
+
         about.summary = context.getString(R.string.settings_version, BuildConfig.VERSION_NAME, "3.9.4", by.cyberpartisan.psms.VERSION.toString())
     }
 
@@ -145,6 +203,7 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
     override fun preferenceClicks(): Observable<PreferenceView> = (0 until preferences.childCount)
             .map { index -> preferences.getChildAt(index) }
             .mapNotNull { view -> view as? PreferenceView }
+            .filter { it.id !in setOf(R.id.iranAdsSpam, R.id.customSpamRegex, R.id.spamArrivalSound) }
             .map { preference -> preference.clicks().map { preference } }
             .let { preferences -> Observable.merge(preferences) }
 

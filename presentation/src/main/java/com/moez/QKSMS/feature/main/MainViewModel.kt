@@ -65,6 +65,8 @@ class MainViewModel @Inject constructor(
     syncRepository: SyncRepository,
     private val changelogManager: ChangelogManager,
     private val conversationRepo: ConversationRepository,
+    private val notificationManager: com.moez.QKSMS.manager.NotificationManager,
+    private val updateBadge: com.moez.QKSMS.interactor.UpdateBadge,
     private val deleteConversations: DeleteConversations,
     private val markArchived: MarkArchived,
     private val markPinned: MarkPinned,
@@ -83,6 +85,17 @@ class MainViewModel @Inject constructor(
     private var keyDialogShowed = false
 
     init {
+        disposables += prefs.keyChanges
+            .filter { it == "iranAdsSpam" || it == "customSpamRegex" }
+            .startWith("initialSpamClassification")
+            .observeOn(Schedulers.single())
+            .subscribe({
+                val changed = conversationRepo.reclassifySpam()
+                changed.forEach(notificationManager::clear)
+                if (changed.isNotEmpty()) updateBadge.execute(Unit)
+            }, timber.log.Timber::w)
+
+        disposables += updateBadge
         disposables += deleteConversations
         disposables += markAllSeen
         disposables += markArchived
@@ -251,6 +264,7 @@ class MainViewModel @Inject constructor(
                         state.page is Searching -> view.clearSearch()
                         state.page is Inbox && state.page.selected > 0 -> view.clearSelection()
                         state.page is Archived && state.page.selected > 0 -> view.clearSelection()
+                        state.page is Spam && state.page.selected > 0 -> view.clearSelection()
 
                         else -> newState { copy(drawerOpen = true) }
                     }
@@ -265,12 +279,14 @@ class MainViewModel @Inject constructor(
         view.navigationIntent
                 .withLatestFrom(state) { drawerItem, state ->
                     newState { copy(drawerOpen = false) }
+                    if (drawerItem in listOf(NavItem.INBOX, NavItem.ARCHIVED, NavItem.SPAM)) view.clearSelection()
                     when (drawerItem) {
                         NavItem.BACK -> when {
                             state.drawerOpen -> Unit
                             state.page is Searching -> view.clearSearch()
                             state.page is Inbox && state.page.selected > 0 -> view.clearSelection()
                             state.page is Archived && state.page.selected > 0 -> view.clearSelection()
+                            state.page is Spam && state.page.selected > 0 -> view.clearSelection()
                             state.page !is Inbox -> {
                                 newState { copy(page = Inbox(data = conversationRepo.getConversations())) }
                             }
@@ -292,6 +308,7 @@ class MainViewModel @Inject constructor(
                     when (drawerItem) {
                         NavItem.INBOX -> newState { copy(page = Inbox(data = conversationRepo.getConversations())) }
                         NavItem.ARCHIVED -> newState { copy(page = Archived(data = conversationRepo.getConversations(true))) }
+                        NavItem.SPAM -> newState { copy(page = Spam(data = conversationRepo.getSpamConversations())) }
                         else -> Unit
                     }
                 }
@@ -422,6 +439,11 @@ class MainViewModel @Inject constructor(
                         }
 
                         is Archived -> {
+                            val page = state.page.copy(addContact = add, markPinned = pin, markRead = read, selected = selected)
+                            newState { copy(page = page) }
+                        }
+
+                        is Spam -> {
                             val page = state.page.copy(addContact = add, markPinned = pin, markRead = read, selected = selected)
                             newState { copy(page = page) }
                         }

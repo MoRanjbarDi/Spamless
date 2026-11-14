@@ -32,6 +32,7 @@ open class Message : RealmObject() {
 
     @PrimaryKey var id: Long = 0
 
+    // Negative for the app-only Spam partition; contentId/getUri always address the real SMS.
     @Index var threadId: Long = 0
 
     // The MMS-SMS content provider returns messages where duplicate ids can exist. This is because

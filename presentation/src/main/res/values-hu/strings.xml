@@ -166,7 +166,7 @@
     <string name="backup_disclaimer">Jelenleg a mentés csak az SMS üzeneteket menti. Az MMS támogatás és az időzített mentések hamarosan jönnek!</string>
     <string name="backup_now">Mentés most</string>
     <string name="backup_progress_parsing">Mentés elemzése&#8230;</string>
-    <string name="backup_progress_running">%d/%d üzenet</string>
+    <string name="backup_progress_running">%1$d/%2$d üzenet</string>
     <string name="backup_progress_saving">Mentés&#8230;</string>
     <string name="backup_progress_syncing">Üzenetek szinkronizálása&#8230;</string>
     <string name="backup_progress_finished">Kész!</string>
@@ -251,7 +251,7 @@
     <string name="settings_sync_title">Üzenetek szinkronizálása</string>
     <string name="settings_sync_summary">Üzenetek újra-szinkronizálása a natív Android SMS-adatbázissal</string>
     <string name="settings_about_title">A QKSMS-ről</string>
-    <string name="settings_version">" %s %s %s verzió"</string>
+    <string name="settings_version">" %1$s %2$s %3$s verzió"</string>
     <string name="settings_logging_enabled">Hibanaplózás engedélyezve</string>
     <string name="settings_logging_disabled">Hibanaplózás tiltva</string>
     <string name="settings_delay_duration_hint">Nyomva tartás ideje (másodpercben)</string>

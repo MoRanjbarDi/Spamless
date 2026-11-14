@@ -166,7 +166,7 @@
     <string name="backup_disclaimer">Per idag er bare mulig å sikkerhetskopiere SMS. MMS og planlagte sikkerhetskopier kommer snart.</string>
     <string name="backup_now">Sikkerhetskopier nå</string>
     <string name="backup_progress_parsing">Ser gjennom sikkerhetskopien &#8230;</string>
-    <string name="backup_progress_running">%d/%d meldinger</string>
+    <string name="backup_progress_running">%1$d/%2$d meldinger</string>
     <string name="backup_progress_saving">Lagrer sikkerhetskopi &#8230;</string>
     <string name="backup_progress_syncing">Synkroniserer meldinger &#8230;</string>
     <string name="backup_progress_finished">Ferdig!</string>
@@ -251,7 +251,7 @@
     <string name="settings_sync_title">Synkroniser meldinger</string>
     <string name="settings_sync_summary">Resynkroniser meldinger med Androids interne meldingslager</string>
     <string name="settings_about_title">Om QKSMS</string>
-    <string name="settings_version">Versjon %s %s %s</string>
+    <string name="settings_version">Versjon %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">Feillogg aktivert</string>
     <string name="settings_logging_disabled">Feillogg deaktivert</string>
     <string name="settings_delay_duration_hint">Legg inn forsinkelse (i sekunder)</string>

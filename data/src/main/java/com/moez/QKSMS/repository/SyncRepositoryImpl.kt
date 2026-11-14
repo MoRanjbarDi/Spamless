@@ -18,6 +18,7 @@
  */
 package com.moez.QKSMS.repository
 
+import com.moez.QKSMS.util.SpamThread
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.net.Uri
@@ -214,6 +215,8 @@ class SyncRepositoryImpl @Inject constructor(
         realm.commitTransaction()
         realm.close()
 
+        conversationRepo.reclassifySpam()
+
         // Only delete this after the sync has successfully completed
         oldBlockedSenders.delete()
 
@@ -264,8 +267,9 @@ class SyncRepositoryImpl @Inject constructor(
                     }
                 }
 
-                conversationRepo.getOrCreateConversation(threadId)
+                conversationRepo.getOrCreateConversation(SpamThread.providerId(threadId))
                 insertOrUpdate()
+                conversationRepo.updateConversations(threadId)
                 syncedMessage.onNext(this)
             }
         }

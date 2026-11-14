@@ -96,6 +96,7 @@ class MainActivity : QkThemedActivity(), MainView {
                 backPressedSubject,
                 inbox.clicks().map { NavItem.INBOX },
                 archived.clicks().map { NavItem.ARCHIVED },
+                spam.clicks().map { NavItem.SPAM },
                 backup.clicks().map { NavItem.BACKUP },
                 scheduled.clicks().map { NavItem.SCHEDULED },
                 blocking.clicks().map { NavItem.BLOCKING },
@@ -170,6 +171,7 @@ class MainActivity : QkThemedActivity(), MainView {
                             .let { tintList ->
                                 inboxIcon.imageTintList = tintList
                                 archivedIcon.imageTintList = tintList
+                                spamIcon.imageTintList = tintList
                             }
 
                     // Miscellaneous views
@@ -212,24 +214,28 @@ class MainActivity : QkThemedActivity(), MainView {
         val addContact = when (state.page) {
             is Inbox -> state.page.addContact
             is Archived -> state.page.addContact
+            is Spam -> state.page.addContact
             else -> false
         }
 
         val markPinned = when (state.page) {
             is Inbox -> state.page.markPinned
             is Archived -> state.page.markPinned
+            is Spam -> state.page.markPinned
             else -> true
         }
 
         val markRead = when (state.page) {
             is Inbox -> state.page.markRead
             is Archived -> state.page.markRead
+            is Spam -> state.page.markRead
             else -> true
         }
 
         val selectedConversations = when (state.page) {
             is Inbox -> state.page.selected
             is Archived -> state.page.selected
+            is Spam -> state.page.selected
             else -> 0
         }
 
@@ -240,11 +246,11 @@ class MainActivity : QkThemedActivity(), MainView {
         toolbar.menu.findItem(R.id.unarchive)?.isVisible = state.page is Archived && selectedConversations != 0
         toolbar.menu.findItem(R.id.delete)?.isVisible = selectedConversations != 0
         toolbar.menu.findItem(R.id.add)?.isVisible = addContact && selectedConversations != 0
-        toolbar.menu.findItem(R.id.pin)?.isVisible = markPinned && selectedConversations != 0
-        toolbar.menu.findItem(R.id.unpin)?.isVisible = !markPinned && selectedConversations != 0
+        toolbar.menu.findItem(R.id.pin)?.isVisible = state.page !is Spam && markPinned && selectedConversations != 0
+        toolbar.menu.findItem(R.id.unpin)?.isVisible = state.page !is Spam && !markPinned && selectedConversations != 0
         toolbar.menu.findItem(R.id.read)?.isVisible = markRead && selectedConversations != 0
         toolbar.menu.findItem(R.id.unread)?.isVisible = !markRead && selectedConversations != 0
-        toolbar.menu.findItem(R.id.block)?.isVisible = selectedConversations != 0
+        toolbar.menu.findItem(R.id.block)?.isVisible = state.page !is Spam && selectedConversations != 0
 
         listOf(plusBadge1, plusBadge2).forEach { badge ->
             badge.isVisible = drawerBadgesExperiment.variant && !state.upgraded
@@ -254,7 +260,7 @@ class MainActivity : QkThemedActivity(), MainView {
         rateLayout.setVisible(state.showRating)
 
         compose.setVisible(state.page is Inbox || state.page is Archived)
-        conversationsAdapter.emptyView = empty.takeIf { state.page is Inbox || state.page is Archived }
+        conversationsAdapter.emptyView = empty.takeIf { state.page is Inbox || state.page is Archived || state.page is Spam }
         searchAdapter.emptyView = empty.takeIf { state.page is Searching }
 
         when (state.page) {
@@ -286,8 +292,21 @@ class MainActivity : QkThemedActivity(), MainView {
                 itemTouchHelper.attachToRecyclerView(null)
                 empty.setText(R.string.archived_empty_text)
             }
+
+            is Spam -> {
+                showBackButton(state.page.selected > 0)
+                title = when (state.page.selected != 0) {
+                    true -> getString(R.string.main_title_selected, state.page.selected)
+                    false -> getString(R.string.title_spam)
+                }
+                if (recyclerView.adapter !== conversationsAdapter) recyclerView.adapter = conversationsAdapter
+                conversationsAdapter.updateData(state.page.data)
+                itemTouchHelper.attachToRecyclerView(null)
+                empty.setText(R.string.spam_empty_text)
+            }
         }
 
+        spam.isActivated = state.page is Spam
         inbox.isActivated = state.page is Inbox
         archived.isActivated = state.page is Archived
 

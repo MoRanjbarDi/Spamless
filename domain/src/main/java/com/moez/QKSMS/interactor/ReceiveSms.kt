@@ -18,6 +18,7 @@
  */
 package com.moez.QKSMS.interactor
 
+import com.moez.QKSMS.util.SpamThread
 import android.telephony.SmsMessage
 import com.moez.QKSMS.blocking.BlockingClient
 import com.moez.QKSMS.extensions.mapNotNull
@@ -65,20 +66,21 @@ class ReceiveSms @Inject constructor(
 
                     // Add the message to the db
                     val message = messageRepo.insertReceivedSms(it.subId, address, body, time)
+                    conversationRepo.getOrCreateConversation(SpamThread.providerId(message.threadId))
 
                     when (action) {
                         is BlockingClient.Action.Block -> {
                             messageRepo.markRead(message.threadId)
-                            conversationRepo.markBlocked(listOf(message.threadId), prefs.blockingManager.get(), action.reason)
+                            conversationRepo.markBlocked(listOf(SpamThread.providerId(message.threadId)), prefs.blockingManager.get(), action.reason)
                         }
-                        is BlockingClient.Action.Unblock -> conversationRepo.markUnblocked(message.threadId)
+                        is BlockingClient.Action.Unblock -> conversationRepo.markUnblocked(SpamThread.providerId(message.threadId))
                         else -> Unit
                     }
 
                     message
                 }
                 .doOnNext { message ->
-                    conversationRepo.updateConversations(message.threadId) // Update the conversation
+                    conversationRepo.updateConversations(message.threadId) // Update both partitions
                 }
                 .mapNotNull { message ->
                     conversationRepo.getOrCreateConversation(message.threadId) // Map message to conversation

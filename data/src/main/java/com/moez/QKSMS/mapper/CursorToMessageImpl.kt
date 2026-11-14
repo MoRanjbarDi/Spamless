@@ -18,6 +18,7 @@
  */
 package com.moez.QKSMS.mapper
 
+import com.moez.QKSMS.util.SpamThread
 import android.content.Context
 import android.database.Cursor
 import android.net.Uri
@@ -126,6 +127,8 @@ class CursorToMessageImpl @Inject constructor(
                     attachmentType = Message.AttachmentType.NOT_LOADED
                 }
             }
+            threadId = SpamThread.classify(
+                threadId, isSms() && !isMe(), body, preferences.spamFilter())
         }
     }
 

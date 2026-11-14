@@ -168,7 +168,7 @@
     <string name="backup_disclaimer">Тренутно су подржане резервне копије само SMS порука. Ускоро очекујте подршку за MMS поруке и заказано прављење резервних копија!</string>
     <string name="backup_now">Одмах направите копију</string>
     <string name="backup_progress_parsing">Обрађујем копију&#8230;</string>
-    <string name="backup_progress_running">%d/%d порука</string>
+    <string name="backup_progress_running">%1$d/%2$d порука</string>
     <string name="backup_progress_saving">Сачувавам резерну копију&#8230;</string>
     <string name="backup_progress_syncing">Синхронизујем поруке&#8230;</string>
     <string name="backup_progress_finished">Завршено!</string>
@@ -254,7 +254,7 @@
     <string name="settings_sync_title">Синхронизуј поруке</string>
     <string name="settings_sync_summary">Поново синхронизуј поруке са изворном Андроид SMS базом података.</string>
     <string name="settings_about_title">О апликацији</string>
-    <string name="settings_version">Верзија %s %s %s</string>
+    <string name="settings_version">Верзија %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">Записи за отклањање грешака су омогућени</string>
     <string name="settings_logging_disabled">Записи за отклањање грешака су онемогућени</string>
     <string name="settings_delay_duration_hint">Унеси трајање (у секундама)</string>

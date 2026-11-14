@@ -168,7 +168,7 @@
     <string name="backup_disclaimer">Currently, only SMS is supported by Backup and Restore. MMS support and scheduled backups will be coming soon!</string>
     <string name="backup_now">Backup now</string>
     <string name="backup_progress_parsing">Parsing backup&#8230;</string>
-    <string name="backup_progress_running">%d/%d messages</string>
+    <string name="backup_progress_running">%1$d/%2$d messages</string>
     <string name="backup_progress_saving">Saving backup&#8230;</string>
     <string name="backup_progress_syncing">Syncing messages&#8230;</string>
     <string name="backup_progress_finished">Finished!</string>
@@ -254,7 +254,7 @@
     <string name="settings_sync_title">Uskladi poruke</string>
     <string name="settings_sync_summary">Ponovno uskladite svoje poruke sa nativnom Android SMS bazom podataka</string>
     <string name="settings_about_title">O aplikaciji</string>
-    <string name="settings_version">Verzija %s %s %s</string>
+    <string name="settings_version">Verzija %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">Debug logging enabled</string>
     <string name="settings_logging_disabled">Debug logging disabled</string>
     <string name="settings_delay_duration_hint">Enter duration (seconds)</string>

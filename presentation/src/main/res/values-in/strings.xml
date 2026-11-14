@@ -164,7 +164,7 @@
     <string name="backup_disclaimer">Saat ini, Cadangan dan Pemulihan hanya mendukung pesan SMS. Dukungan MMS dan cadangan terjadwal akan segera datang!</string>
     <string name="backup_now">Cadangkan sekarang</string>
     <string name="backup_progress_parsing">Membaca cadangan&#8230;</string>
-    <string name="backup_progress_running">%d/%d pesan</string>
+    <string name="backup_progress_running">%1$d/%2$d pesan</string>
     <string name="backup_progress_saving">Menyimpan cadangan&#8230;</string>
     <string name="backup_progress_syncing">Menyinkronkan pesan&#8230;</string>
     <string name="backup_progress_finished">Selesai!</string>
@@ -248,7 +248,7 @@
     <string name="settings_sync_title">Sinkronisasi pesan</string>
     <string name="settings_sync_summary">Sinkronisasi ulang pesan anda dengan basis data aplikasi SMS Android bawaan</string>
     <string name="settings_about_title">Tentang QKSMS</string>
-    <string name="settings_version">Versi %s %s %s</string>
+    <string name="settings_version">Versi %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">Log awakutu diaktifkan</string>
     <string name="settings_logging_disabled">Log awakutu dinonaktifkan</string>
     <string name="settings_delay_duration_hint">Masukkan durasi (detik)</string>

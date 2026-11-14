@@ -18,6 +18,7 @@
  */
 package com.moez.QKSMS.common.util
 
+import com.moez.QKSMS.util.SpamThread
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -88,9 +89,20 @@ class NotificationManagerImpl @Inject constructor(
     /**
      * Updates the notification for a particular conversation
      */
+    override fun clear(threadId: Long) {
+        notificationManager.cancel(threadId.toInt())
+        if (threadId >= 0) notificationManager.cancel(threadId.toInt() + 100000)
+    }
+
+    private fun spamSound(threadId: Long): Uri? = when (prefs.spamArrivalSound.get()) {
+        0 -> null
+        2 -> prefs.ringtone(SpamThread.providerId(threadId)).get().takeIf { it.isNotEmpty() }?.let(Uri::parse)
+        else -> Uri.parse("android.resource://${context.packageName}/raw/spam_beep")
+    }
+
     override fun update(threadId: Long) {
         // If notifications are disabled, don't do anything
-        if (!prefs.notifications(threadId).get()) {
+        if (!prefs.notifications(SpamThread.providerId(threadId)).get()) {
             return
         }
 
@@ -98,8 +110,7 @@ class NotificationManagerImpl @Inject constructor(
 
         // If there are no messages to be displayed, make sure that the notification is dismissed
         if (messages.isEmpty()) {
-            notificationManager.cancel(threadId.toInt())
-            notificationManager.cancel(threadId.toInt() + 100000)
+            clear(threadId)
             return
         }
 
@@ -121,14 +132,17 @@ class NotificationManagerImpl @Inject constructor(
                 PendingIntent.FLAG_UPDATE_CURRENT)
 
         // We can't store a null preference, so map it to a null Uri if the pref string is empty
-        val ringtone = prefs.ringtone(threadId).get()
+        val ringtone = (if (threadId < 0) spamSound(threadId) else prefs.ringtone(threadId).get()
                 .takeIf { it.isNotEmpty() }
-                ?.let(Uri::parse)
+                ?.let(Uri::parse))
                 ?.also { uri ->
                     // https://commonsware.com/blog/2016/09/07/notifications-sounds-android-7p0-aggravation.html
-                    context.grantUriPermission("com.android.systemui", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    if (uri.scheme == "content") {
+                        context.grantUriPermission("com.android.systemui", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
                 }
 
+        if (threadId < 0) createNotificationChannel(threadId)
         val notification = NotificationCompat.Builder(context, getChannelIdForNotification(threadId))
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setColor(colors.theme(lastRecipient).theme)
@@ -141,7 +155,8 @@ class NotificationManagerImpl @Inject constructor(
                 .setSound(ringtone)
                 .setLights(Color.WHITE, 500, 2000)
                 .setWhen(conversation.lastMessage?.date ?: System.currentTimeMillis())
-                .setVibrate(if (prefs.vibration(threadId).get()) VIBRATE_PATTERN else longArrayOf(0))
+                .setVibrate(if ((threadId >= 0 || prefs.spamArrivalSound.get() == 2) &&
+                    prefs.vibration(SpamThread.providerId(threadId)).get()) VIBRATE_PATTERN else longArrayOf(0))
 
         // Tell the notification if it's a group message
         val messagingStyle = NotificationCompat.MessagingStyle("Me")
@@ -227,6 +242,8 @@ class NotificationManagerImpl @Inject constructor(
         val actionLabels = context.resources.getStringArray(R.array.notification_actions)
         listOf(prefs.notifAction1, prefs.notifAction2, prefs.notifAction3)
                 .map { preference -> preference.get() }
+                .filter { threadId >= 0 || it !in setOf(Preferences.NOTIFICATION_ACTION_ARCHIVE,
+                    Preferences.NOTIFICATION_ACTION_BLOCK) }
                 .distinct()
                 .mapNotNull { action ->
                     when (action) {
@@ -293,7 +310,7 @@ class NotificationManagerImpl @Inject constructor(
                 }
                 .forEach { notification.addAction(it) }
 
-        if (prefs.qkreply.get()) {
+        if (threadId >= 0 && prefs.qkreply.get()) {
             notification.priority = NotificationCompat.PRIORITY_DEFAULT
 
             val intent = Intent(context, QkReplyActivity::class.java)
@@ -306,7 +323,7 @@ class NotificationManagerImpl @Inject constructor(
         notificationManager.notify(threadId.toInt(), notification.build())
 
         // Wake screen
-        if (prefs.wakeScreen(threadId).get()) {
+        if (threadId >= 0 && prefs.wakeScreen(threadId).get()) {
             context.getSystemService<PowerManager>()?.let { powerManager ->
                 if (!powerManager.isInteractive) {
                     val flags = PowerManager.SCREEN_DIM_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP
@@ -386,6 +403,22 @@ class NotificationManagerImpl @Inject constructor(
             return
         }
 
+        if (threadId < 0) {
+            val channel = NotificationChannel(buildNotificationChannelId(threadId),
+                context.getString(R.string.spam_arrival_sound) + " · " +
+                    context.resources.getStringArray(R.array.spam_arrival_sounds)[prefs.spamArrivalSound.get().coerceIn(0, 2)],
+                NotificationManager.IMPORTANCE_HIGH).apply {
+                val vibrate = prefs.spamArrivalSound.get() == 2 && prefs.vibration(SpamThread.providerId(threadId)).get()
+                enableVibration(vibrate)
+                vibrationPattern = if (vibrate) VIBRATE_PATTERN else longArrayOf(0)
+                setSound(spamSound(threadId), AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
+            }
+            notificationManager.createNotificationChannel(channel)
+            return
+        }
+
         val channel = when (threadId) {
             0L -> NotificationChannel(DEFAULT_CHANNEL_ID, "Default", NotificationManager.IMPORTANCE_HIGH).apply {
                 enableLights(true)
@@ -447,6 +480,13 @@ class NotificationManagerImpl @Inject constructor(
      * Formats a notification channel id for a given thread id, whether the channel exists or not
      */
     override fun buildNotificationChannelId(threadId: Long): String {
+        if (threadId < 0) {
+            // Android channels have immutable sounds. A distinct ID makes a setting change take effect.
+            val mode = prefs.spamArrivalSound.get().coerceIn(0, 2)
+            val soundKey = if (mode == 2) prefs.ringtone(SpamThread.providerId(threadId)).get().hashCode() else 0
+            val vibrate = mode == 2 && prefs.vibration(SpamThread.providerId(threadId)).get()
+            return "spam_${mode}_${soundKey}_$vibrate"
+        }
         return when (threadId) {
             0L -> DEFAULT_CHANNEL_ID
             else -> "notifications_$threadId"

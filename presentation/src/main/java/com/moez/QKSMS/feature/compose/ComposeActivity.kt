@@ -223,6 +223,7 @@ class ComposeActivity : QkThemedActivity(), ComposeView {
         title = when {
             state.selectedMessages > 0 -> getString(R.string.compose_title_selected, state.selectedMessages)
             state.query.isNotEmpty() -> state.query
+            state.threadId < 0 -> getString(R.string.spam_conversation_title, state.conversationtitle)
             else -> state.conversationtitle
         }
 

@@ -172,7 +172,7 @@
     <string name="backup_disclaimer">В настоящее время поддерживается резервное копирование и восстановление только SMS. Поддержка MMS и регулярные резервные копии появятся в ближайшее время!</string>
     <string name="backup_now">Резервировать</string>
     <string name="backup_progress_parsing">Анализ резервной копии&#8230;</string>
-    <string name="backup_progress_running">%d/%d сообщений</string>
+    <string name="backup_progress_running">%1$d/%2$d сообщений</string>
     <string name="backup_progress_saving">Сохранение резервной копии&#8230;</string>
     <string name="backup_progress_syncing">Синхронизация сообщений&#8230;</string>
     <string name="backup_progress_finished">Завершено!</string>
@@ -259,7 +259,7 @@
     <string name="settings_sync_title">Синхронизация сообщений</string>
     <string name="settings_sync_summary">Принудительная синхронизация сообщений с собственной базой данных SMS Android</string>
     <string name="settings_about_title">О P-SMS</string>
-    <string name="settings_version">Версия %s\nверсия QKSMS %s\nверсия P-SMS-lib %s</string>
+    <string name="settings_version">Версия %1$s\nверсия QKSMS %2$s\nверсия P-SMS-lib %3$s</string>
     <string name="settings_logging_enabled">Ведение журнала отладки включено</string>
     <string name="settings_logging_disabled">Ведение журнала отладки отключено</string>
     <string name="settings_delay_duration_hint">Введите продолжительность (в секундах)</string>

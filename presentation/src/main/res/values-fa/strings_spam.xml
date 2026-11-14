@@ -1,0 +1,19 @@
+
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="title_spam">هرزنامه</string>
+    <string name="spam_empty_text">هرزنامه‌ای وجود ندارد</string>
+    <string name="spam_settings">تنظیمات هرزنامه</string>
+    <string name="spam_iran_ads">فیلتر پیامک‌های تبلیغاتی ایران</string>
+    <string name="spam_iran_ads_summary">فیلتر کردن پیامک‌های تبلیغاتی بر اساس متن آن‌ها.</string>
+    <string name="spam_custom_regex">عبارت منظم دلخواه</string>
+    <string name="spam_custom_regex_summary">استفاده از عبارت منظم (Regex) جاوا اختیاری است. تطبیق پیام با هر یک از دو قانون کافی است. برای غیرفعال کردن قانون دلخواه، فیلد مربوط به آن را خالی بگذارید.</string>
+    <string name="spam_arrival_sound">صدای اعلان هرزنامه</string>
+    <string name="spam_regex_error">عبارت منظم نامعتبر است: %1$s</string>
+    <string name="spam_conversation_title">هرزنامه · %1$s</string>
+    <string-array name="spam_arrival_sounds">
+        <item>بی‌صدا</item>
+        <item>صدای بیپ</item>
+        <item>صدای اعلان پیامک سیستم</item>
+    </string-array>
+</resources>

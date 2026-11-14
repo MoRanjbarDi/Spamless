@@ -166,7 +166,7 @@
     <string name="backup_disclaimer">Şu anda, sadece SMS yedekleme ve geri yükleme desteklenmektedir. MMS desteği ve zamanlanmış mesaj yedeklemeleri çok yakında !</string>
     <string name="backup_now">Şimdi yedekle</string>
     <string name="backup_progress_parsing">Yedekleme ayrılıyor&#8230;</string>
-    <string name="backup_progress_running">%d%d mesajlar</string>
+    <string name="backup_progress_running">%1$d%2$d mesajlar</string>
     <string name="backup_progress_saving">Yedekleme kaydediliyor...</string>
     <string name="backup_progress_syncing">Mesajlar senkronize ediliyor...</string>
     <string name="backup_progress_finished">Tamamlandı!</string>
@@ -251,7 +251,7 @@
     <string name="settings_sync_title"> İletileri eşitle</string>
     <string name="settings_sync_summary">İletilerinizi  Android SMS veritabanı ile yeniden senkronize edin</string>
     <string name="settings_about_title">QKSMS Hakkında</string>
-    <string name="settings_version">Sürüm %s %s %s</string>
+    <string name="settings_version">Sürüm %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">Hata ayıklama günlüğü etkin</string>
     <string name="settings_logging_disabled">Hata ayıklama günlüğü devre dışı</string>
     <string name="settings_delay_duration_hint">Süre (saniye olarak) girin</string>

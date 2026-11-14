@@ -164,7 +164,7 @@
     <string name="backup_disclaimer">現在、SMSのみがバックアップと復元でサポートされています。 MMSのサポートと定期的なバックアップは近日中に開始されます。</string>
     <string name="backup_now">今すぐバックアップ</string>
     <string name="backup_progress_parsing">バックアップの解析中...</string>
-    <string name="backup_progress_running">%d/%dすべてのメッセージ</string>
+    <string name="backup_progress_running">%1$d/%2$dすべてのメッセージ</string>
     <string name="backup_progress_saving">バックアップを保存しています...</string>
     <string name="backup_progress_syncing">メッセージを同期しています...</string>
     <string name="backup_progress_finished">終了しました。</string>
@@ -248,7 +248,7 @@
     <string name="settings_sync_title">メッセージを同期</string>
     <string name="settings_sync_summary">メッセージをネイティブの Android SMS データベースと再同期します</string>
     <string name="settings_about_title">QKSMS について</string>
-    <string name="settings_version">バージョン %s %s %s</string>
+    <string name="settings_version">バージョン %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">デバッグログが有効</string>
     <string name="settings_logging_disabled">デバッグログを無効にする</string>
     <string name="settings_delay_duration_hint">期間を入力してください (秒)</string>

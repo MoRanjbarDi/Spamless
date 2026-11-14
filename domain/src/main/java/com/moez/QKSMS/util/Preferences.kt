@@ -88,6 +88,22 @@ class Preferences @Inject constructor(
         }
     }
 
+    val iranAdsSpam = rxPrefs.getBoolean("iranAdsSpam", true)
+    val customSpamRegex = rxPrefs.getString("customSpamRegex", "")
+    val spamArrivalSound = rxPrefs.getInteger("spamArrivalSound", 1) // silent, beep, system
+
+    private var spamFilterKey: Pair<Boolean, String>? = null
+    private var spamFilterCache: SpamFilter? = null
+
+    @Synchronized fun spamFilter(): SpamFilter {
+        val key = Pair(iranAdsSpam.get(), customSpamRegex.get())
+        if (spamFilterKey != key) {
+            spamFilterCache = SpamFilter(key.first, key.second)
+            spamFilterKey = key
+        }
+        return spamFilterCache!!
+    }
+
     // Internal
     val didSetReferrer = rxPrefs.getBoolean("didSetReferrer", false)
     val night = rxPrefs.getBoolean("night", false)

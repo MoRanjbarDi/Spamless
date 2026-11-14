@@ -174,7 +174,7 @@
     <string name="backup_disclaimer">النسخ الاحتياطي والاستعادة متاحة الآن فقط للرسائل النصّية. دعم رسائل الوسائط والرسائل المجدولة قادم قريباً!</string>
     <string name="backup_now">النسخ الاحتياطي الآن</string>
     <string name="backup_progress_parsing">توزيع النسخ الاحتياطي&#8230;</string>
-    <string name="backup_progress_running">%d/%d رسائل</string>
+    <string name="backup_progress_running">%1$d/%2$d رسائل</string>
     <string name="backup_progress_saving">جارٍ حفظُ النسخة الاحتياطية&#8230;</string>
     <string name="backup_progress_syncing">مزامنة الرسائل جارية&#8230;</string>
     <string name="backup_progress_finished">تم!</string>
@@ -263,7 +263,7 @@
     <string name="settings_sync_title">مزامنة الرسائل</string>
     <string name="settings_sync_summary">إعادة مزامنة رسائلك مع قاعدة البيانات الأصلية للرسائل في النظام</string>
     <string name="settings_about_title">حول QKSMS</string>
-    <string name="settings_version">النسخة %s %s %s</string>
+    <string name="settings_version">النسخة %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">تسجيل التصحيح مفعَّل</string>
     <string name="settings_logging_disabled">تسجيل التصحيح معطَّل</string>
     <string name="settings_delay_duration_hint">أدخل المدة (ثوان)</string>

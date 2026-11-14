@@ -18,6 +18,7 @@
  */
 package com.moez.QKSMS.repository
 
+import com.moez.QKSMS.util.SpamThread
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.ContentUris
@@ -151,6 +152,7 @@ class MessageRepositoryImpl @Inject constructor(
         return Realm.getDefaultInstance().use { realm ->
             realm.refresh()
             realm.where(Conversation::class.java)
+                    .greaterThan("id", 0L)
                     .equalTo("archived", false)
                     .equalTo("blocked", false)
                     .equalTo("lastMessage.read", false)
@@ -257,34 +259,17 @@ class MessageRepositoryImpl @Inject constructor(
     }
 
     override fun markRead(vararg threadIds: Long) {
-        Realm.getDefaultInstance()?.use { realm ->
-            val messages = realm.where(Message::class.java)
-                    .anyOf("threadId", threadIds)
-                    .beginGroup()
-                    .equalTo("read", false)
-                    .or()
-                    .equalTo("seen", false)
-                    .endGroup()
-                    .findAll()
-
-            realm.executeTransaction {
-                messages.forEach { message ->
-                    message.seen = true
-                    message.read = true
-                }
+        Realm.getDefaultInstance().use { realm ->
+            realm.refresh()
+            val messages = realm.where(Message::class.java).anyOf("threadId", threadIds)
+                .beginGroup().equalTo("read", false).or().equalTo("seen", false).endGroup().findAll()
+            val values = ContentValues().apply { put(Sms.SEEN, true); put(Sms.READ, true) }
+            messages.map { it.getUri() }.forEach { uri ->
+                try { context.contentResolver.update(uri, values, null, null) }
+                catch (exception: Exception) { Timber.w(exception) }
             }
-        }
-
-        val values = ContentValues()
-        values.put(Sms.SEEN, true)
-        values.put(Sms.READ, true)
-
-        threadIds.forEach { threadId ->
-            try {
-                val uri = ContentUris.withAppendedId(Telephony.MmsSms.CONTENT_CONVERSATIONS_URI, threadId)
-                context.contentResolver.update(uri, values, "${Sms.READ} = 0", null)
-            } catch (exception: Exception) {
-                Timber.w(exception)
+            realm.executeTransaction {
+                messages.forEach { it.seen = true; it.read = true }
             }
         }
     }
@@ -614,7 +599,7 @@ class MessageRepositoryImpl @Inject constructor(
     }
 
     private fun checkSentMessage(message: Message) {
-        val conversation = conversationRepository.getConversation(message.threadId)
+        val conversation = conversationRepository.getConversation(SpamThread.providerId(message.threadId))
         if (conversation != null && (isMessageEncrypted(message, conversation.encryptionKey) && conversation.deleteEncryptedAfter > 0 || conversation.deleteSentAfter > 0)) {
             var minTimeoutId = conversation.deleteSentAfter
             if (minTimeoutId == 0 || conversation.encryptionKey.isNotEmpty() && conversation.deleteEncryptedAfter > 0 && conversation.deleteEncryptedAfter < minTimeoutId) {
@@ -647,7 +632,10 @@ class MessageRepositoryImpl @Inject constructor(
             threadId = TelephonyCompat.getOrCreateThreadId(context, address)
             boxId = Sms.MESSAGE_TYPE_INBOX
             type = "sms"
+            threadId = SpamThread.classify(
+                threadId, true, body, prefs.spamFilter())
             read = activeConversationManager.getActiveConversation() == threadId
+            seen = read
         }
         val realm = Realm.getDefaultInstance()
         var managedMessage: Message? = null
@@ -657,7 +645,9 @@ class MessageRepositoryImpl @Inject constructor(
         val values = contentValuesOf(
                 Sms.ADDRESS to address,
                 Sms.BODY to body,
-                Sms.DATE_SENT to sentTime
+                Sms.DATE_SENT to sentTime,
+                Sms.READ to message.read,
+                Sms.SEEN to message.seen
         )
 
         if (prefs.canUseSubId.get()) {
@@ -677,7 +667,7 @@ class MessageRepositoryImpl @Inject constructor(
     }
 
     private fun checkReceivedMessage(message: Message) {
-        val conversation = conversationRepository.getConversation(message.threadId)
+        val conversation = conversationRepository.getConversation(SpamThread.providerId(message.threadId))
         val isEncryptedByConversationKey = conversation != null && conversation.encryptionKey.isNotEmpty()
                 && PSmsEncryptor().isEncrypted(message.getText(), Base64.decode(conversation.encryptionKey, Base64.DEFAULT))
 

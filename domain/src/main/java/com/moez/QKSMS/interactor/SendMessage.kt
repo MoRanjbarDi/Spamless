@@ -18,6 +18,7 @@
  */
 package com.moez.QKSMS.interactor
 
+import com.moez.QKSMS.util.SpamThread
 import android.content.Context
 import com.moez.QKSMS.compat.TelephonyCompat
 import com.moez.QKSMS.extensions.mapNotNull
@@ -49,7 +50,7 @@ class SendMessage @Inject constructor(
                 // If a threadId isn't provided, try to obtain one
                 val threadId = when (params.threadId) {
                     0L -> TelephonyCompat.getOrCreateThreadId(context, params.addresses.toSet())
-                    else -> params.threadId
+                    else -> SpamThread.providerId(params.threadId)
                 }
                 messageRepo.sendMessage(params.subId, threadId, params.addresses, params.body, params.attachments,
                         params.delay)
@@ -59,7 +60,7 @@ class SendMessage @Inject constructor(
                 // Sync it now and get the id
                 when (params.threadId) {
                     0L -> conversationRepo.getOrCreateConversation(params.addresses)?.id
-                    else -> params.threadId
+                    else -> SpamThread.providerId(params.threadId)
                 }
             }
             .doOnNext { threadId -> conversationRepo.updateConversations(threadId) }

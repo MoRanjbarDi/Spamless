@@ -1,0 +1,19 @@
+
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="title_spam">Spam</string>
+    <string name="spam_empty_text">No spam messages</string>
+    <string name="spam_settings">Spam settings</string>
+    <string name="spam_iran_ads">Filter Iranian ads</string>
+    <string name="spam_iran_ads_summary">Automatically move Iranian advertising messages to the Spam folder.</string>
+    <string name="spam_custom_regex">Custom regular expression</string>
+    <string name="spam_custom_regex_summary">Optional Java regular expression. Messages matching either rule will be moved to Spam. Leave blank to disable this rule.</string>
+    <string name="spam_arrival_sound">Spam notification sound</string>
+    <string name="spam_regex_error">Invalid regular expression: %1$s</string>
+    <string name="spam_conversation_title">Spam · %1$s</string>
+    <string-array name="spam_arrival_sounds">
+        <item>Silent</item>
+        <item>Beep</item>
+        <item>Default SMS notification sound</item>
+    </string-array>
+</resources>

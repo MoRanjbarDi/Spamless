@@ -170,7 +170,7 @@
     <string name="backup_disclaimer">На даний момент підтримуються лише SMS-повідомлення. Підтримка MMS-повідомлень та створення резервних копій за розкладом буде реалізована незабаром!</string>
     <string name="backup_now">Створити резервну копію</string>
     <string name="backup_progress_parsing">Аналіз резервної копії&#8230;</string>
-    <string name="backup_progress_running">%d/%d повідомлень</string>
+    <string name="backup_progress_running">%1$d/%2$d повідомлень</string>
     <string name="backup_progress_saving">Збереження резервної копії&#8230;</string>
     <string name="backup_progress_syncing">Синхронізація повідомлень&#8230;</string>
     <string name="backup_progress_finished">Готово!</string>
@@ -257,7 +257,7 @@
     <string name="settings_sync_title">Синхронізація повідомлень</string>
     <string name="settings_sync_summary">Повторна синхронізація ваших повідомлень з власною базою даних SMS Android</string>
     <string name="settings_about_title">Про QKSMS</string>
-    <string name="settings_version">Версія %s %s %s</string>
+    <string name="settings_version">Версія %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">Ведення журналу зневаження увімкнуте</string>
     <string name="settings_logging_disabled">Ведення журналу зневаження вимкнуте</string>
     <string name="settings_delay_duration_hint">Введіть тривалість (у секундах)</string>

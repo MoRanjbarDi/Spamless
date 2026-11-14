@@ -164,7 +164,7 @@
     <string name="backup_disclaimer">Hiện tại, tính năng sao lưu và khôi phục chỉ hỗ trợ SMS. Việc hỗ trợ MMS và tính năng sao lưu định kì sẽ có sớm!</string>
     <string name="backup_now">Sao lưu ngay</string>
     <string name="backup_progress_parsing">Đang phân tích bản sao lưu&#8230;</string>
-    <string name="backup_progress_running">%d/%d tin nhắn</string>
+    <string name="backup_progress_running">%1$d/%2$d tin nhắn</string>
     <string name="backup_progress_saving">Đang lưu bản sao lưu&#8230;</string>
     <string name="backup_progress_syncing">Đang đồng bộ tin nhắn&#8230;</string>
     <string name="backup_progress_finished">Hoàn tất!</string>
@@ -248,7 +248,7 @@
     <string name="settings_sync_title">Đồng bộ tin nhắn</string>
     <string name="settings_sync_summary">Đồng bộ lại tin nhắn với thiết bị</string>
     <string name="settings_about_title">Thông tin QKSMS</string>
-    <string name="settings_version">Phiên bản: %s %s %s</string>
+    <string name="settings_version">Phiên bản: %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">Đã bật bản ghi gỡ lỗi</string>
     <string name="settings_logging_disabled">Đã tắt bản ghi gỡ lỗi</string>
     <string name="settings_delay_duration_hint">Nhập khoảng thời gian (giây)</string>

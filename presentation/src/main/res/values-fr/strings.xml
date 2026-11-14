@@ -166,7 +166,7 @@
     <string name="backup_disclaimer">Actuellement, seulement la sauvegarde et la restauration des SMS sont pris en charge. Les MMS et les sauvegardes planifiées arriveront bientôt !</string>
     <string name="backup_now">Sauvegarder maintenant</string>
     <string name="backup_progress_parsing">Analyse de la sauvegarde&#8230;</string>
-    <string name="backup_progress_running">%d/%d messages</string>
+    <string name="backup_progress_running">%1$d/%2$d messages</string>
     <string name="backup_progress_saving">Enregistrement de la sauvegarde&#8230;</string>
     <string name="backup_progress_syncing">Synchronisation des messages&#8230;</string>
     <string name="backup_progress_finished">Terminé !</string>
@@ -251,7 +251,7 @@
     <string name="settings_sync_title">Synchroniser les messages</string>
     <string name="settings_sync_summary">Resynchroniser les messages avec la base de données Android native</string>
     <string name="settings_about_title">À propos de QKSMS</string>
-    <string name="settings_version">Version %s %s %s</string>
+    <string name="settings_version">Version %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">Journal de débogage activé</string>
     <string name="settings_logging_disabled">Journal de débogage désactivé</string>
     <string name="settings_delay_duration_hint">Entrez la durée (en secondes)</string>

@@ -164,7 +164,7 @@
     <string name="backup_disclaimer">目前只有短信支持备份和恢复。彩信支持和定时备份将很快到来!</string>
     <string name="backup_now">立即备份</string>
     <string name="backup_progress_parsing">正在分析备份&#8230;</string>
-    <string name="backup_progress_running">%d/%d 消息</string>
+    <string name="backup_progress_running">%1$d/%2$d 消息</string>
     <string name="backup_progress_saving">正在保存备份&#8230;</string>
     <string name="backup_progress_syncing">正在同步信息&#8230;</string>
     <string name="backup_progress_finished">完成！</string>
@@ -248,7 +248,7 @@
     <string name="settings_sync_title">同步消息</string>
     <string name="settings_sync_summary">重新与安卓原生短信数据库进行同步</string>
     <string name="settings_about_title">关于 QKSMS</string>
-    <string name="settings_version">版本 %s %s %s</string>
+    <string name="settings_version">版本 %1$s %2$s %3$s</string>
     <string name="settings_logging_enabled">调试日志记录已启用</string>
     <string name="settings_logging_disabled">调试日志记录已禁用</string>
     <string name="settings_delay_duration_hint">输入时长 (秒)</string>

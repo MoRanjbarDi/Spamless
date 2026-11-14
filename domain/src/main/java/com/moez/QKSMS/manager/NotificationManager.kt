@@ -24,6 +24,8 @@ interface NotificationManager {
 
     fun update(threadId: Long)
 
+    fun clear(threadId: Long)
+
     fun notifyFailed(threadId: Long)
 
     fun createNotificationChannel(threadId: Long = 0L)

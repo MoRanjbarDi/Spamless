@@ -72,6 +72,27 @@
 
         <com.moez.QKSMS.common.widget.QkTextView
             style="@style/PreferenceCategory"
+            android:text="@string/spam_settings" />
+        <com.moez.QKSMS.common.widget.PreferenceView
+            android:id="@+id/iranAdsSpam"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:title="@string/spam_iran_ads"
+            app:summary="@string/spam_iran_ads_summary"
+            app:widget="@layout/settings_switch_widget" />
+        <com.moez.QKSMS.common.widget.PreferenceView
+            android:id="@+id/customSpamRegex"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:title="@string/spam_custom_regex" />
+        <com.moez.QKSMS.common.widget.PreferenceView
+            android:id="@+id/spamArrivalSound"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:title="@string/spam_arrival_sound" />
+
+        <com.moez.QKSMS.common.widget.QkTextView
+            style="@style/PreferenceCategory"
             android:text="@string/settings_category_appearance" />
 
         <com.moez.QKSMS.common.widget.PreferenceView
