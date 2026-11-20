@@ -1,128 +1,171 @@
-# Spamless 1.1.1
+# Spamless
 
-Spamless is an Android SMS/MMS app with regular-expression spam filtering and optional message encryption. This fork uses its own public version numbering. The current release is **1.2.2**.
+**پیامک‌های مرتب‌تر، تبلیغات کم‌صداتر، و رمزگذاری اختیاری متن پیام‌ها.**
 
-## Inbox and search
+**A cleaner SMS inbox, quieter spam alerts, and optional message encryption.**
 
-- **All**, **Contacts**, and **Others** tabs appear below search. Choose the opening tab in **Settings → General → Default inbox tab**. All is the initial default.
-- **Pull down to refresh** the inbox, including an empty tab. Refresh reloads contacts and rebuilds the selected filter, so a newly saved contact moves out of Others and into Contacts. Contact changes also refresh when the app resumes and when the contacts observer reports an update.
-- Contacts includes conversations with at least one saved contact. Others contains conversations with no saved contacts.
-- Search returns individual matching messages, newest first, with a highlighted excerpt. Opening a result jumps to that message.
-- Search follows the selected tab or folder, including Spam and Archived.
-- The Spam folder supports **Select all** for bulk actions.
-- An inbox conversation has a **Show spam messages** menu option, off by default and saved per conversation. It changes visibility only; spam keeps its original classification and is labelled in the combined view.
 
-## Trash
+**Disclaimer:** Spamless is a personal hobby project, and there are currently no plans to publish it on Google Play or other app stores. GitHub-only distribution is a choice, not a security warning. The source code is open for anyone to inspect, and spam filtering happens on your device. To make sure you’re getting an official build, download Spamless directly from the project’s GitHub Releases page.
 
-- Deleted SMS and MMS messages go to **Trash** by default, including individual deletions, conversation deletions, notification actions, timed deletion, and general/spam automatic deletion.
-- The retention period starts **when a message is deleted**, not when it was received. The default is **5 days**; choose 1–3650 days in **Settings → General → Keep deleted messages**.
-- Trash supports **Restore**, **Restore all**, **Delete permanently**, and **Empty Trash**. Permanent deletion asks for confirmation. Restoration returns messages to their conversation using the current spam rules and preserves MMS attachments. Restored messages are read and do not generate a new arrival alert.
-- **Use Trash** can be disabled. Future deletions then become permanent; messages already in Trash keep their retention period. Shortening the retention period asks for confirmation before applying the new limit to existing Trash.
-- Trashed messages are excluded from inbox/spam/archive previews, conversation contents, search, notifications, gallery lists, and newly created message backups. Full and incremental synchronization preserve Trash timestamps.
-- Cleanup runs at app startup, when Trash opens, after a retention change, and through a persisted hourly background job. Android controls when background jobs actually run, particularly during Doze or while the app is stopped.
+**یادداشت توسعه‌دهنده:** Spamless یک پروژه شخصی از فرط کلافکی از تعداد پیامک های تبلیغاتی بی در و پیکر است. هنوز اینقدر جدی نشده که بدانم قصد انتشار در بازارگاه های اپ مانند گوگل پلی را دارم یا نه یا در آینده چه اتفاقی می خواهد بیفتد؟ اما تمام مراحل ضد هرزنامه داخل گوشی شما اتفاق می افتد، هیچ مخزن آنلاین مشترکی برای کراود سورس سرشماره های تبلیغاتی یا اتفاقاتی از این دست که  Spamless را به یک برنامه متصل و وابسته به اینترنت تبدیل کند وجود ندارد. 
+آخرین ورژن را همیشه از گیتهاب خودم دانلود کنید.
 
-Trash state is app-local. System SMS/MMS records and attachments are retained until permanent deletion to support restoration. Other SMS apps can see those retained records; removing app data or reinstalling without its data removes the local Trash markers. Provider deletions outside Spamless are not intercepted.
 
-## Spam controls
+[فارسی](#fa) · [English](#en) · [دانلود / Releases](https://github.com/MoRanjbarDi/Spamless/releases)
 
-The built-in Iranian advertising rule and the optional Java regular expression continue to work together. Spam settings now have icons and include:
+<a id="fa"></a>
+<div dir="rtl">
 
-- **Spam notifications:** Off, Dismiss after 10 seconds, or On.
-- **Spam notification sound:** Silent, Beep, or the configured SMS notification sound. The sound choice is independent of visual notifications: Off can still play the chosen sound when a new spam message arrives. Select Silent to mute it. Device volume and Do Not Disturb still apply.
-- **Delete spam messages automatically:** choose an age in days using the same dialog as general automatic deletion, or choose Never. The default is Never. A confirmation is shown before immediately deleting existing expired messages.
+## فارسی
 
-Spam-only cleanup removes only expired spam, including in mixed-sender threads. It preserves normal messages and recent spam. Cleanup runs after saving an enabled policy and then through Android's hourly background job; Android controls the exact background execution time. The separate General deletion policy still applies to all messages, so an enabled general policy can also remove spam.
+Spamless یک برنامهٔ متن‌باز اندرویدی برای مدیریت SMS و MMS است. Spamless **متن پیام را برای تشخیص هرزنامه بررسی می‌کند**، گفت‌وگوهای مخاطبان و شماره‌های ذخیره‌نشده را در زبانه‌های جدا نشان می‌دهد و به شما امکان می‌دهد **متن پیام‌ها را با یک کلید مشترک رمزگذاری کنید**.
 
-## Defaults and settings
+### شروع استفاده
 
-- Blue is the default theme and delivery confirmations are enabled by default. Explicitly saved user choices remain intact; delivery reports also depend on carrier support.
-- **Encryption settings** contains the three encryption controls, after General and immediately before Sync.
-- The Pure black night mode option is removed from Settings. Ordinary night mode remains available.
-- Google Play rating prompts are disabled.
-- Donate and Invite friends are hidden in the navigation drawer. Their backend handlers remain for future use.
-- The launcher preserves its original geometry with an exact HSV hue rotation of -130 degrees. Spam has a distinct warning-tray icon.
-- Credits and links are updated, including the exact requested `New in QKSMS` changelog title. Original legal notices and technical package/dependency names are retained.
+Spamless را نصب کنید و به‌عنوان **برنامهٔ پیش‌فرض پیامک** انتخاب کنید. برای تفکیک گفت‌وگوهای مخاطبان از بقیه، دسترسی به مخاطبان را بدهید. برای نمایش اعلان‌ها نیز دسترسی اعلان را فعال کنید.
 
-## Android compatibility and storage
+### فیلتر پیامک‌های تبلیغاتی
 
-The application targets **Android 16 / API 36** and supports Android 5.0 / API 21 and later. It includes current notification permission handling, explicit receiver exports and PendingIntent mutability, system/keyboard insets, and foreground restore-service declarations. Scheduled operations use an OS-supported fallback when exact-alarm access is unavailable.
+Spamless به **متن هر پیام** نگاه می‌کند، نه فقط به سرشمارهٔ آن. به همین دلیل، ممکن است پیام خدماتی یک فرستنده در صندوق ورودی بماند و پیام تبلیغاتی همان فرستنده به پوشهٔ «هرزنامه» برود. بررسی متن روی خود گوشی انجام می‌شود.
 
-On Android 11 and later, new backups are saved through MediaStore in **Downloads/Spamless/Backups**, without broad storage permission. They remain in Downloads after uninstall. Use **Restore → Choose another file** to select a legacy or externally stored JSON backup through Android's file picker. Earlier Android versions retain the filesystem backup directories, including legacy QKSMS backups. Viewed/shared message attachments use app-owned temporary/export files on newer Android.
+برای تغییر این گزینه‌ها، از منوی کناری به **تنظیمات ← تنظیمات هرزنامه** بروید.
 
-A current target SDK addresses the outdated-Android target warning. Android, Play Protect, and device manufacturers independently control checks for sideloaded or unverified applications; an APK cannot promise to eliminate every installation prompt.
+1. **فیلتر پیامک‌های تبلیغاتی ایران** را روشن کنید تا الگوهای مختص پیامک های تبلیغاتی ایرانی را شناسایی کرده و آن ها را به پوشه هرزنامه بفرستد. با این حال، برخی از پیامک های تبلیغاتی (بخصوص پیامک های تبلیغاتی خود اپراتورها که تعدادشان هم زیاد نیست)این الگو را ندارند و گاهی ممکن است پیامی تبلیغاتی همچنان در صندوق اصلی مشاهده شوند. (در این موارد می توانید سرشماره را به صورت دستی بلاک کنید)
+2. در **عبارت منظم دلخواه** می‌توانید با قالب Regex جاوا، الگوی خودتان را اضافه کنید. کافی است متن پیام با یکی از قوانین فعال مطابقت داشته باشد تا به هرزنامه برود. برای غیرفعال کردن قانون دلخواه، این کادر را خالی بگذارید.
+3. در **اعلان‌های هرزنامه** می‌توانید اعلان روی صفحه را خاموش کنید، تنظیم کنید پس از ۱۰ ثانیه ناپدید شود یا آن را روشن نگه دارید.
+4. در **صدای اعلان هرزنامه** یکی از «بی‌صدا»، «بوق کوتاه» یا «صدای پیش‌فرض اعلان پیامک» را انتخاب کنید. صدا مستقل از اعلان روی صفحه است، یعنی حتی اگر نمایش اعلان را خاموش کنید، بوق همچنان می‌تواند پخش شود.
+5. **لرزش هرزنامه** را با گزینهٔ **Vibrate for spam messages** جدا از صدا تنظیم کنید. لرزش به‌طور پیش‌فرض روشن است و از حالت بی‌صدا و «مزاحم نشوید» گوشی پیروی می‌کند.
+6. در **حذف خودکار پیام‌های هرزنامه** مدت نگهداری پیام‌ها را تعیین کنید یا «هرگز» را انتخاب کنید. اگر سطل زباله فعال باشد، پیام‌هایی که خودکار حذف می‌شوند ابتدا به آنجا می‌روند.
 
-## Build
+> **پیشنهاد می‌کنیم دست‌کم یکی از سه گزینهٔ نمایش اعلان، لرزش یا صدای هرزنامه را فعال نگه دارید.** تعداد بسیار اندکی از سرویس‌ها، همچون اپلیکیشن پرداخت تارا، گاهی کد تأیید (OTP) را از سرشمارهٔ تبلیغاتی می‌فرستند. اگر پیامک‌های آن سرشماره ملزم به درج عبارت‌های مختص سرشماره تبلیغاتی باشند، ممکن است Spamless کد تأیید را هم به‌خاطر همین عبارت به پوشهٔ هرزنامه بفرستد. در این حالت، اعلان، لرزش یا صدا خبرتان می‌کند که آن پوشه را بررسی کنید.
 
-Requirements:
+#### اگر پیامی اشتباهی به هرزنامه رفت
 
-- JDK 11.
-- Android SDK platform 36.
-- Android SDK Build-Tools **29.0.3** and **36.0.0**. The pinned legacy Android plugin uses 29.0.3 for packaging; the project uses AAPT2 and the Java 11 D8 API from 36.0.0 for current platform resources and bytecode. Java 21 command-line wrappers are excluded from the Gradle compiler cache.
-- The included Gradle 6.7.1 wrapper.
+- برای خارج کردن **فقط یک پیام** از هرزنامه، گفت‌وگو را در پوشهٔ هرزنامه باز کنید، انگشتتان را روی همان پیام نگه دارید و **Mark as not spam** را بزنید. پیام‌های بعدی فرستنده همچنان بررسی می‌شوند.
+- برای **مجاز کردن یک فرستنده**، در پوشهٔ هرزنامه انگشتتان را روی گفت‌وگو نگه دارید و از منوی سه‌نقطه **Always allow this sender** را بزنید. پیام‌های فعلی او از هرزنامه خارج می‌شوند و پیام‌های بعدی‌اش دیگر فیلتر نمی‌شوند.
+- اگر فقط می‌خواهید **پیام‌های عادی و هرزنامه را کنار هم ببینید**، در منوی گفت‌وگو در صندوق ورودی **Show spam messages** را روشن کنید. این کار دسته‌بندی پیام‌ها را تغییر نمی‌دهد.
+
+### زبانه‌های مخاطبان و غیرمخاطبان
+
+زیر نوار جست‌وجو سه زبانه قرار دارد.
+
+- **همه (All)** تمام گفت‌وگوهای عادی صندوق ورودی را نشان می‌دهد. هرزنامه‌ها در پوشهٔ جداگانه می‌مانند.
+- **مخاطبان (Contacts)** گفت‌وگوهایی را نشان می‌دهد که دست‌کم یکی از طرف‌های گفت‌وگو در مخاطبان گوشی ذخیره شده است.
+- **غیرمخاطبان (Others)** گفت‌وگوهایی را نشان می‌دهد که هیچ‌یک از طرف‌های گفت‌وگو در مخاطبان گوشی ذخیره نشده‌اند.
+
+از **تنظیمات ← عمومی ← زبانهٔ پیش‌فرض صندوق ورودی** انتخاب کنید که برنامه با کدام زبانه باز شود. بعد از ذخیره یا حذف یک مخاطب، فهرست صندوق ورودی را به پایین بکشید تا به‌روز شود. جست‌وجو هم فقط در زبانه یا پوشه‌ای انجام می‌شود که باز کرده‌اید.
+
+### رمزگذاری متن پیام‌ها
+
+رمزگذاری اختیاری است. برای فرستادن و خواندن پیام رمزگذاری‌شده، **هر دو نفر باید Spamless نسخهٔ ۱.۲.۰ یا جدیدتر و یک کلید مشترک داشته باشند**.
+
+1. گفت‌وگو را باز کنید و در بخش اطلاعات گفت‌وگو، گزینهٔ **Encryption Key** را بزنید.
+2. یک کلید بسازید یا کلید مشترک را وارد کنید. برای رساندن کلید به طرف مقابل از روشی مطمئن استفاده کنید، مثلاً حضوری کد QR را اسکن کنید.
+3. با نماد قفل در نوار بالای گفت‌وگو، رمزگذاری را روشن یا خاموش کنید.
+4. اگر می‌خواهید برای گفت‌وگوهای بدون کلید اختصاصی یک کلید پیش‌فرض داشته باشید، به **تنظیمات ← تنظیمات رمزگذاری ← Global Encryption Key** بروید. طرف مقابل همچنان باید همان کلید را داشته باشد.
+
+با روشن بودن رمزگذاری، متن پیام‌های جدید با **AES-256-GCM** رمزگذاری می‌شود. تصاویر و دیگر پیوست‌های MMS مشمول این رمزگذاری نیستند. کلیدها را در جای امنی نگه دارید. اگر برنامه را حذف کنید یا داده‌های آن را پاک کنید، ممکن است بدون کلید دیگر نتوانید پیام‌های رمزگذاری‌شده را بخوانید.
+
+### امکانات دیگر
+
+- **ارسال پیامک‌های طولانی.** Spamless متن‌های بلند را به‌صورت پیامک چندبخشی (SMS) می‌فرستد، بدون اینکه آن‌ها را خودکار به MMS تبدیل کند. این تبدیل در بعضی گوشی‌ها هنگام استفاده از Google Messages یا Samsung Messages رخ می‌دهد.
+- **جست‌وجو در متن پیام‌ها.** نتیجهٔ جست‌وجو بخشی از متن هر پیام را نشان می‌دهد و با انتخاب آن مستقیماً به همان پیام می‌روید. پوشهٔ هرزنامه هم جست‌وجو و گزینهٔ «انتخاب همه» دارد.
+- **سطل زباله.** به‌طور پیش‌فرض، پیام‌های حذف‌شده تا ۵ روز قابل بازیابی‌اند. از بخش **تنظیمات ← عمومی** می‌توانید سطل زباله را فعال یا غیرفعال کنید و مدت نگهداری پیام‌ها را تغییر دهید.
+
+</div>
+
+---
+
+<a id="en"></a>
+
+## English
+
+Spamless is an open-source Android SMS/MMS app built around three features: **text-based spam filtering, separate contact and non-contact inbox views, and optional message encryption**.
+
+### What makes Spamless different?
+
+- **Filtering by message content:** Matching messages move to Spam. Ordinary and promotional messages from the same sender can appear in separate folders.
+- **A built-in rule for Iranian promotional SMS:** Recognizes cancellation text using `11`, Persian `۱۱`, and Arabic-Indic `١١`. Rule matching runs on your device.
+- **Custom rules:** Add your own Java regular expression to match other unwanted message patterns.
+- **Three tabs below search:** All, Contacts, and Others help separate personal conversations from service messages and unsaved senders.
+- **Optional encryption:** Two people with a shared key can exchange encrypted message text.
+
+### Getting started
+
+Install Spamless, select it as your **default SMS app**, and grant the required permissions. Contacts access enables contact/non-contact separation; notification permission enables visible alerts.
+
+### Configure spam filtering
+
+Open the navigation drawer, then **Settings → Spam settings**:
+
+1. **Filter Iranian ads:** Enable or disable the built-in rule. It recognizes text that only go in iran's promotional messages. It is a pattern-based rule: some ads will not match, and some legitimate messages may match.
+2. **Custom regular expression:** Enter a Java Regex for additional patterns. Leave it blank to disable the custom rule. A match against either enabled rule sends the message to Spam.
+3. **Spam notifications:** Choose Off, Dismiss after 10 seconds, or On.
+4. **Spam notification sound:** Choose Silent, Beep, or Default SMS notification sound. Sound is independent of visible notifications, so Beep can still play when visual spam notifications are Off.
+5. **Vibrate for spam messages:** Set vibration independently of sound. It is enabled by default and respects silent mode and Do Not Disturb.
+6. **Delete spam messages automatically:** Choose a retention period or Never. When Trash is enabled, automatically deleted messages go there first.
+
+> **Recommended: set the spam sound to Beep.** Some services send one-time passwords (OTPs) from sender IDs also used for promotional SMS. If a rule mistakenly routes an important message to Spam, a short beep lets you know to check that folder. Sharing a sender ID alone does not classify a message as spam—the filter checks its text. Phone sound settings and Do Not Disturb still apply.
+
+**Correct a classification:**
+
+- **Allow a sender:** In Spam, long-press a conversation, open the three-dot menu, and choose **Always allow this sender**. Current messages move out of Spam, and future messages from that sender are exempt from filtering.
+- **Allow only a message:** Inside a spam conversation, long-press the message and choose **Mark as not spam**. This does not allow every future message from its sender.
+- **View both parts of a conversation:** Enable **Show spam messages** from the inbox conversation’s menu. This changes visibility without changing spam classifications.
+
+### Separate contacts and non-contacts
+
+The tabs below search are:
+
+- **All:** Regular inbox conversations from both saved and unsaved senders. Spam remains in its own folder.
+- **Contacts:** Conversations with at least one recipient saved in your phone’s contacts.
+- **Others:** Conversations with no saved recipients.
+
+Choose the opening view in **Settings → General → Default inbox tab**. After saving or deleting a contact, pull down on the inbox to refresh. Search follows the selected tab or folder.
+
+### Configure encryption
+
+Encryption is optional. **Both participants need Spamless 1.2.0 or newer and the same shared key** to exchange newly encrypted messages.
+
+1. Open a conversation, go to its conversation information/settings, and select **Encryption Key**.
+2. Generate a key or enter a shared key. Exchange it through a trusted channel, such as scanning the QR code in person.
+3. Use the lock control in the conversation toolbar to enable or disable encryption.
+4. To configure a default key, open **Settings → Encryption settings → Global Encryption Key**. Conversations without their own key use this default; each recipient still needs the matching key.
+
+New message text uses **AES-256-GCM** encryption. This feature does not encrypt MMS images or attachments. Keep shared keys somewhere secure: uninstalling the app or clearing its data can remove access to encrypted messages.
+
+### More features
+
+- **Message-level search:** Results show individual messages with relevant excerpts. Opening a result jumps to that message. Spam also supports search and Select all.
+- **Trash:** Deleted messages are recoverable for 5 days by default. Configure Trash and its retention period under General settings.
+- **Independent spam alerts:** Choose how much attention spam receives without tying its sound to visible notifications.
+
+---
+
+## Build from source / ساخت از کد منبع
+
+Requires **JDK 11**, **Android SDK Platform 36**, and **Build-Tools 29.0.3 and 36.0.0**. Use the included Gradle wrapper.
+
+برای ساخت، پیش‌نیازهای بالا را نصب و مسیر SDK را در `local.properties` یا متغیر `ANDROID_HOME` تنظیم کنید. / Configure your SDK path in `local.properties` or `ANDROID_HOME`, then run:
 
 ```sh
-export JAVA_HOME=/path/to/jdk-11
-export ANDROID_HOME=/path/to/android-sdk
+chmod +x gradlew
 export REALM_DISABLE_ANALYTICS=true
-export SPAMLESS_KEYSTORE=/private/path/spamless-release.jks
-export SPAMLESS_KEY_ALIAS=spamless
-export SPAMLESS_KEYSTORE_PASSWORD='your-keystore-password'
-./gradlew :presentation:assembleNoAnalyticsRelease -x :presentation:lintVitalNoAnalyticsRelease
+./gradlew :presentation:assembleNoAnalyticsRelease
 ```
 
-The wrapper scripts disable Realm build-plugin telemetry. Set the same environment variable for IDE builds. After dependencies have been cached, `--offline` can be used to build without dependency-network access.
+برای ساخت نسخهٔ امضاشده، متغیرهای `SPAMLESS_KEYSTORE`، `SPAMLESS_KEY_ALIAS` و `SPAMLESS_KEYSTORE_PASSWORD` را تنظیم کنید. برای به‌روزرسانی نصب‌های قبلی، همان کلید امضا را نگه دارید. / Set `SPAMLESS_KEYSTORE`, `SPAMLESS_KEY_ALIAS`, and `SPAMLESS_KEYSTORE_PASSWORD` for a signed release. Keep the same signing key for updates.
 
-Output: `presentation/build/outputs/apk/noAnalytics/release/Spamless-v1.2.2-noAnalytics-release.apk`.
+Application ID: `com.moranjbardi.spamless`
 
-The delivered APK is a signed **noAnalytics release** with application ID **`com.moranjbardi.spamless`**, not a debug APK. Debug builds use `com.moranjbardi.spamless.debug`. Release APKs are unsigned if the signing environment variables are omitted. Keep the separately delivered signing backup private and use the same key for future updates; it is intentionally excluded from this source archive. The legacy lint-vital task is skipped in the packaging command above; compilation, resource linking, shrinking and signing still run.
+Current version: **1.2.2**
 
-The public version is 1.2.2 and the internal Android versionCode is 4014. Updating an installed app requires the same application ID and signing certificate. The app now has its own Android identity, `com.moranjbardi.spamless`. It installs separately from both the previous `org.cpartisans.psms` release and the old `com.moez.QKSMS` debug app. The same private Spamless release signing key is retained; the previous signing backup is still valid. System SMS/MMS can be synchronized after selecting Spamless as the default SMS app, while private settings and encryption keys belong to each app package and must be transferred separately. Back up important app data before switching packages. This fork key cannot sign updates over an upstream APK signed by someone else.
+## Credits & license / سازندگان و مجوز
 
-## Tests
+Created by **Moranjbardi**, based on [Partisan-SMS](https://github.com/wrwrabbit/Partisan-SMS) and [QKSMS](https://github.com/moezbhatti/qksms). Credits: **Moranjbardi, Cpartisans, Moez Bhatti**.
 
-```sh
-./gradlew :domain:testDebugUnitTest :data:assembleNoAnalyticsDebugAndroidTest :presentation:assembleNoAnalyticsDebugAndroidTest
-./gradlew :data:connectedNoAnalyticsDebugAndroidTest
-./gradlew :presentation:connectedNoAnalyticsDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.moez.QKSMS.common.util.SpamNotificationTest
-```
-
-Release 1.1.1 is packaged without running unit tests, instrumentation tests, or emulator checks, as requested. APK metadata and signing are inspected during packaging.
-
-Run connected tests on an emulator or test device. Database tests use in-memory Realm databases and a fake SMS provider. Notification tests use synthetic messages and cover hidden notifications, independent sound choices, ten-second expiration, and normal notifications. The existing retention fixtures explicitly disable Trash to continue exercising permanent-deletion behavior.
-
-The bundled native Realm dependency remains pinned at 10.4.0. Native behavior on devices using 16 KB memory pages needs separate validation before distribution to those devices.
-
-## Credits and license
-
-Moranjbardi, Cpartisans, Moez Bhatti. Based on [Partisan-SMS](https://github.com/wrwrabbit/Partisan-SMS) and [QKSMS](https://github.com/moezbhatti/qksms).
-
-- Source and releases: [MoRanjbarDi/Spamless](https://github.com/MoRanjbarDi/Spamless)
-- Contact: [moranjbardi.github.io](https://moranjbardi.github.io/)
-- Copyright: © 2014–2026
-- GNU General Public License v3.0; original GPL notices are preserved. See [LICENSE](LICENSE).
-
-## 1.2.0 security and inbox improvements
-
-- Every send path, including notification replies and the quick-reply window, now applies the conversation's encryption policy in the shared transport.
-- New encrypted text uses the versioned `SL2:` AES-256-GCM format with a cryptographically random 96-bit nonce, a 128-bit authentication tag and authenticated protocol metadata. Both participants need Spamless 1.2.0 or newer. Legacy sending/encoding controls are retired. Old formats are decoded only for displaying messages dated before this installation's protocol upgrade; newly received legacy messages do not use the compatibility decoder. Existing scheduled messages created before updating should be cancelled and recreated, since their bodies may already contain legacy ciphertext.
-- Shared preferences wrap the global message key with a local storage key protected by Android Keystore. The complete Realm database, including conversation keys and scheduled drafts, is encrypted with a separate Keystore-wrapped key. Existing local data migrates on startup. System cloud backup and device-transfer extraction exclude private app data; wrapped storage keys live in the no-backup directory. Keep copies of your shared conversation keys somewhere secure before clearing app data or uninstalling, because the device-bound storage keys cannot be restored on another device. Manual SMS exports retain their existing behavior.
-- Search copies only matching message and conversation data, limits object-graph depth, interrupts superseded searches and displays **Searching…** during debounce and lookup. No result-count cap is imposed.
-- **Vibrate for spam messages** is independent of spam sound and visual notification mode, defaults on, and respects silent mode and Do Not Disturb. Android notification-channel settings also apply to visible alerts.
-- In Spam, select a thread and choose **Always allow this sender** to move current messages to the inbox and allow future messages from that sender. Select individual spam messages and choose **Mark as not spam** to move just those messages. Exceptions survive provider resynchronization and changes to regex rules.
-
-The reset-by-SMS feature, receiver exposure, unencrypted MMS attachments, Trash retention and manual export policies were not changed in this release (review findings S5–S9).
-
-
-## 1.2.1 responsiveness fixes
-
-- **Always allow this sender** and **Mark as not spam** move the affected messages directly in a single transaction. They no longer reclassify the entire inbox for each action. Sender and message exceptions remain persistent, selections are captured before background work starts, and the app shows success/failure feedback.
-- Contact refresh builds indexes for number matching, computes changes before taking the database write lock, and updates only changed contacts and recipient links. An unchanged address book causes no database writes. Pull-to-refresh keeps its spinner tied to completion/error/disposal and preserves the existing list query. Redundant initial contact-change events are removed.
-- Moving messages to Trash updates their conversation rows in the same commit, before alarm cancellation or provider updates. Provider read-state updates and permanent deletion use batches of up to 250 messages. Deletion no longer deep-copies message/attachment graphs or refreshes the database separately for each selected message.
-- Startup spam classification runs only when its rules/signature change. Classification scans do not hold the database write lock, and only changed conversation halves are rebuilt. Full provider imports still explicitly build both Inbox and Spam rows.
-
-Release validation: Android `noAnalyticsRelease` compilation, release packaging and APK identity/signature inspection. No device/emulator or performance benchmark tests were run.
-
-
-## 1.2.2 Arabic-Indic spam matching
-
-The built-in Iranian advertising SMS rule now recognizes `لغو ١١` (Arabic-Indic digit one, U+0661), alongside `لغو 11` and `لغو ۱۱`. Existing colon, spacing and multiline behavior is preserved. The effective rule is `.*لغو[:\s]*(11|۱۱|١١).*`. Startup classification signatures now include the built-in rule so existing messages are reclassified when that rule changes; saved sender and individual-message exemptions still apply.
+- [Source / کد منبع](https://github.com/MoRanjbarDi/Spamless)
+- [Releases / دریافت نسخه‌ها](https://github.com/MoRanjbarDi/Spamless/releases)
+- [Website / وب‌سایت](https://moranjbardi.github.io/)
+- **GNU General Public License v3.0** — see [LICENSE](LICENSE).
+- © 2014–2026. Original copyright and license notices are preserved.
