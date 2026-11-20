@@ -80,6 +80,8 @@ class MainActivity : QkThemedActivity(), MainView {
     @Inject lateinit var itemTouchCallback: ConversationItemTouchCallback
     @Inject lateinit var viewModelFactory: ViewModelProvider.Factory
 
+    override val refreshIntent: Subject<Unit> = PublishSubject.create()
+    override val inboxTabIntent: Subject<InboxTab> = PublishSubject.create()
     override val onNewIntentIntent: Subject<Intent> = PublishSubject.create()
     override val activityResumedIntent: Subject<Boolean> = PublishSubject.create()
     override val showGenerateKeyIntent: Subject<Boolean> = PublishSubject.create()
@@ -97,6 +99,7 @@ class MainActivity : QkThemedActivity(), MainView {
                 inbox.clicks().map { NavItem.INBOX },
                 archived.clicks().map { NavItem.ARCHIVED },
                 spam.clicks().map { NavItem.SPAM },
+                trash.clicks().map { NavItem.TRASH },
                 backup.clicks().map { NavItem.BACKUP },
                 scheduled.clicks().map { NavItem.SCHEDULED },
                 blocking.clicks().map { NavItem.BLOCKING },
@@ -116,6 +119,9 @@ class MainActivity : QkThemedActivity(), MainView {
     override val undoArchiveIntent: Subject<Unit> = PublishSubject.create()
     override val snackbarButtonIntent: Subject<Unit> = PublishSubject.create()
 
+    private var renderingTabs = false
+    private var requestingBasicPermissions = false
+
     private val viewModel by lazy { ViewModelProviders.of(this, viewModelFactory)[MainViewModel::class.java] }
     private val toggle by lazy { ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.main_drawer_open_cd, 0) }
     private val itemTouchHelper by lazy { ItemTouchHelper(itemTouchCallback) }
@@ -129,6 +135,17 @@ class MainActivity : QkThemedActivity(), MainView {
         AndroidInjection.inject(this)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main_activity)
+        inboxTabs.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab) {
+                if (!renderingTabs) inboxTabIntent.onNext(InboxTab.values()[tab.position])
+            }
+            override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab) = Unit
+            override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab) = Unit
+        })
+        inboxRefresh.setOnRefreshListener { refreshIntent.onNext(Unit) }
+        inboxRefresh.setOnChildScrollUpCallback { _, _ ->
+            recyclerView.visibility == View.VISIBLE && recyclerView.canScrollVertically(-1)
+        }
         viewModel.bindView(this)
         onNewIntentIntent.onNext(intent)
 
@@ -184,6 +201,9 @@ class MainActivity : QkThemedActivity(), MainView {
                     plusIcon.setTint(theme.theme)
                     rateIcon.setTint(theme.theme)
                     compose.setBackgroundTint(theme.theme)
+                    inboxRefresh.setColorSchemeColors(theme.theme)
+                    inboxTabs.setSelectedTabIndicatorColor(theme.theme)
+                    inboxTabs.setTabTextColors(resolveThemeColor(android.R.attr.textColorSecondary), theme.theme)
 
                     // Set the FAB compose icon color
                     compose.setTint(theme.textPrimary)
@@ -239,7 +259,17 @@ class MainActivity : QkThemedActivity(), MainView {
             else -> 0
         }
 
-        toolbarSearch.setVisible(state.page is Inbox && state.page.selected == 0 || state.page is Searching)
+        toolbarSearch.setVisible((state.page is Inbox || state.page is Spam || state.page is Archived)
+            && selectedConversations == 0 || state.page is Searching)
+        toolbarSearch.setHint(if (state.page is Spam || (state.page as? Searching)?.spam == true)
+            R.string.spam_search_hint else R.string.search_messages_hint)
+        inboxTabs.setVisible(state.page is Inbox || (state.page as? Searching)?.let { !it.spam && !it.archived } == true)
+        if (inboxTabs.selectedTabPosition != state.inboxTab.ordinal) {
+            renderingTabs = true
+            inboxTabs.getTabAt(state.inboxTab.ordinal)?.select()
+            renderingTabs = false
+        }
+        toolbar.menu.findItem(R.id.select_all)?.isVisible = state.page is Spam
         toolbarTitle.setVisible(toolbarSearch.visibility != View.VISIBLE)
 
         toolbar.menu.findItem(R.id.archive)?.isVisible = state.page is Inbox && selectedConversations != 0
@@ -250,14 +280,18 @@ class MainActivity : QkThemedActivity(), MainView {
         toolbar.menu.findItem(R.id.unpin)?.isVisible = state.page !is Spam && !markPinned && selectedConversations != 0
         toolbar.menu.findItem(R.id.read)?.isVisible = markRead && selectedConversations != 0
         toolbar.menu.findItem(R.id.unread)?.isVisible = !markRead && selectedConversations != 0
+        toolbar.menu.findItem(R.id.not_spam_sender)?.isVisible = state.page is Spam && selectedConversations != 0
         toolbar.menu.findItem(R.id.block)?.isVisible = state.page !is Spam && selectedConversations != 0
 
         listOf(plusBadge1, plusBadge2).forEach { badge ->
             badge.isVisible = drawerBadgesExperiment.variant && !state.upgraded
         }
-        plus.isVisible = state.upgraded
-        plusBanner.isVisible = !state.upgraded
-        rateLayout.setVisible(state.showRating)
+        plus.isVisible = false // Kept for a future donation UI.
+        plusBanner.isVisible = false
+        invite.isVisible = false
+        rateLayout.setVisible(false)
+        inboxRefresh.isEnabled = (state.page is Inbox || state.page is Spam || state.page is Archived) && selectedConversations == 0
+        inboxRefresh.isRefreshing = state.refreshing
 
         compose.setVisible(state.page is Inbox || state.page is Archived)
         conversationsAdapter.emptyView = empty.takeIf { state.page is Inbox || state.page is Archived || state.page is Spam }
@@ -278,7 +312,7 @@ class MainActivity : QkThemedActivity(), MainView {
                 if (recyclerView.adapter !== searchAdapter) recyclerView.adapter = searchAdapter
                 searchAdapter.data = state.page.data ?: listOf()
                 itemTouchHelper.attachToRecyclerView(null)
-                empty.setText(R.string.inbox_search_empty_text)
+                empty.setText(if (state.page.loading) R.string.searching_messages else R.string.inbox_search_empty_text)
             }
 
             is Archived -> {
@@ -306,9 +340,9 @@ class MainActivity : QkThemedActivity(), MainView {
             }
         }
 
-        spam.isActivated = state.page is Spam
-        inbox.isActivated = state.page is Inbox
-        archived.isActivated = state.page is Archived
+        spam.isActivated = state.page is Spam || (state.page as? Searching)?.spam == true
+        inbox.isActivated = state.page is Inbox || (state.page as? Searching)?.let { !it.spam && !it.archived } == true
+        archived.isActivated = state.page is Archived || (state.page as? Searching)?.archived == true
 
         if (drawerLayout.isDrawerOpen(GravityCompat.START) && !state.drawerOpen) {
             drawerLayout.closeDrawer(GravityCompat.START)
@@ -355,6 +389,27 @@ class MainActivity : QkThemedActivity(), MainView {
     override fun onResume() {
         super.onResume()
         activityResumedIntent.onNext(true)
+        window.decorView.post { requestNotificationPermissionIfNeeded() }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= 33 && !requestingBasicPermissions && !isFinishing &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED &&
+            checkSelfPermission(android.Manifest.permission.READ_SMS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            val permissionPrefs = getSharedPreferences("runtime_permissions", MODE_PRIVATE)
+            if (!permissionPrefs.getBoolean("notificationsRequested", false)) {
+                permissionPrefs.edit().putBoolean("notificationsRequested", true).apply()
+                ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 0) {
+            requestingBasicPermissions = false
+            window.decorView.post { requestNotificationPermissionIfNeeded() }
+        }
     }
 
     override fun onPause() {
@@ -386,6 +441,7 @@ class MainActivity : QkThemedActivity(), MainView {
     }
 
     override fun requestPermissions() {
+        requestingBasicPermissions = true
         ActivityCompat.requestPermissions(this, arrayOf(
                 Manifest.permission.READ_SMS,
                 Manifest.permission.SEND_SMS,
@@ -412,9 +468,9 @@ class MainActivity : QkThemedActivity(), MainView {
     override fun showDeleteDialog(conversations: List<Long>) {
         val count = conversations.size
         AlertDialog.Builder(this)
-                .setTitle(R.string.dialog_delete_title)
-                .setMessage(resources.getQuantityString(R.plurals.dialog_delete_message, count, count))
-                .setPositiveButton(R.string.button_delete) { _, _ -> confirmDeleteIntent.onNext(conversations) }
+                .setTitle(com.moez.QKSMS.common.util.DeletionUi.title(prefs))
+                .setMessage(com.moez.QKSMS.common.util.DeletionUi.conversations(this, prefs, count))
+                .setPositiveButton(com.moez.QKSMS.common.util.DeletionUi.button(prefs)) { _, _ -> confirmDeleteIntent.onNext(conversations) }
                 .setNegativeButton(R.string.button_cancel, null)
                 .show()
     }
@@ -437,7 +493,9 @@ class MainActivity : QkThemedActivity(), MainView {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        optionsItemIntent.onNext(item.itemId)
+        if (item.itemId == R.id.select_all) {
+            conversationsAdapter.selectItems(conversationsAdapter.data?.map { it.id } ?: emptyList())
+        } else optionsItemIntent.onNext(item.itemId)
         return true
     }
 

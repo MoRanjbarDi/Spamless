@@ -238,11 +238,16 @@ class ComposeActivity : QkThemedActivity(), ComposeView {
         // Don't set the adapters unless needed
         if (state.editingMode && chips.adapter == null) chips.adapter = chipsAdapter
 
+        toolbar.menu.findItem(R.id.show_spam_messages)?.apply {
+            isVisible = state.threadId > 0 && !state.editingMode && state.selectedMessages == 0 && state.query.isEmpty()
+            isChecked = state.showSpamMessages
+        }
         toolbar.menu.findItem(R.id.add)?.isVisible = state.editingMode
         toolbar.menu.findItem(R.id.call)?.isVisible = !state.editingMode && state.selectedMessages == 0
                 && state.query.isEmpty()
         toolbar.menu.findItem(R.id.info)?.isVisible = !state.editingMode && state.selectedMessages == 0
                 && state.query.isEmpty()
+        toolbar.menu.findItem(R.id.not_spam_message)?.isVisible = !state.editingMode && state.selectedMessages > 0 && (state.threadId < 0 || state.showSpamMessages)
         toolbar.menu.findItem(R.id.copy)?.isVisible = !state.editingMode && state.selectedMessages > 0
         toolbar.menu.findItem(R.id.details)?.isVisible = !state.editingMode && state.selectedMessages == 1
         toolbar.menu.findItem(R.id.delete)?.isVisible = !state.editingMode && state.selectedMessages > 0
@@ -448,7 +453,7 @@ class ComposeActivity : QkThemedActivity(), ComposeView {
         super.onSaveInstanceState(outState)
     }
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         cameraDestination = savedInstanceState?.getParcelable(CameraDestinationKey)
         super.onRestoreInstanceState(savedInstanceState)
     }

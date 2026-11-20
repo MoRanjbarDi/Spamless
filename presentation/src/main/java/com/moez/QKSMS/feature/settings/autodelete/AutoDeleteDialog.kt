@@ -25,18 +25,20 @@ import androidx.appcompat.app.AlertDialog
 import com.moez.QKSMS.R
 import kotlinx.android.synthetic.main.settings_auto_delete_dialog.view.*
 
-class AutoDeleteDialog(context: Activity, listener: (Int) -> Unit) : AlertDialog(context) {
+class AutoDeleteDialog(context: Activity, listener: (Int) -> Unit,
+    title: Int = R.string.settings_auto_delete,
+    message: Int = R.string.settings_auto_delete_dialog_message) : AlertDialog(context) {
 
     private val layout = LayoutInflater.from(context).inflate(R.layout.settings_auto_delete_dialog, null)
 
     init {
         setView(layout)
-        setTitle(R.string.settings_auto_delete)
-        setMessage(context.getString(R.string.settings_auto_delete_dialog_message))
+        setTitle(title)
+        setMessage(context.getString(message))
         setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.button_cancel)) { _, _ -> }
         setButton(DialogInterface.BUTTON_NEGATIVE, context.getString(R.string.settings_auto_delete_never)) { _, _ -> listener(0) }
         setButton(DialogInterface.BUTTON_POSITIVE, context.getString(R.string.button_save)) { _, _ ->
-            listener(layout.field.text.toString().toIntOrNull() ?: 0)
+            listener((layout.field.text.toString().toIntOrNull() ?: 0).coerceAtLeast(0))
         }
     }
 

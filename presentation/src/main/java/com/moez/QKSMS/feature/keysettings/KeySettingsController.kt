@@ -166,11 +166,17 @@ class KeySettingsController(
             legacyEncryptionConversation.visibility = View.GONE
         }
 
-        schemeDefault.visibility = if (state.isConversation) View.VISIBLE else View.GONE
-        renderEncodingRadioButton(schemeBase64, nonKeyEncryptionSettingsEnabled)
-        renderEncodingRadioButton(schemeBase64Cyrillic, nonKeyEncryptionSettingsEnabled)
-        renderEncodingRadioButton(schemeRussianWords, nonKeyEncryptionSettingsEnabled)
-        renderEncodingRadioButton(schemeDefault, nonKeyEncryptionSettingsEnabled)
+        // Sending always uses authenticated protocol v2. Old options stay in the model for history.
+        legacyEncryption.visibility = View.GONE
+        legacyEncryptionConversation.visibility = View.GONE
+        schemeBase64.visibility = View.GONE
+        schemeBase64Cyrillic.visibility = View.GONE
+        schemeRussianWords.visibility = View.GONE
+        schemeDefault.visibility = View.GONE
+        renderEncodingRadioButton(schemeBase64, false)
+        renderEncodingRadioButton(schemeBase64Cyrillic, false)
+        renderEncodingRadioButton(schemeRussianWords, false)
+        renderEncodingRadioButton(schemeDefault, false)
         if (state.encodingScheme >= 0) {
             encodingSchemes.check(encodingSchemes[state.encodingScheme].id)
         }

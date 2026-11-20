@@ -506,6 +506,20 @@ public class TransactionService extends Service implements Observer {
         }
     }
 
+    private int startLegacyMmsNetwork() throws IOException {
+        try {
+            return (Integer) ConnectivityManager.class.getMethod("startUsingNetworkFeature", int.class, String.class)
+                    .invoke(mConnMgr, ConnectivityManager.TYPE_MOBILE, "enableMMS");
+        } catch (Exception error) { throw new IOException("Legacy MMS network is unavailable", error); }
+    }
+
+    private void stopLegacyMmsNetwork() {
+        try {
+            ConnectivityManager.class.getMethod("stopUsingNetworkFeature", int.class, String.class)
+                    .invoke(mConnMgr, ConnectivityManager.TYPE_MOBILE, "enableMMS");
+        } catch (Exception error) { android.util.Log.w("Spamless", "Legacy MMS cleanup", error); }
+    }
+
     protected int beginMmsConnectivity() throws IOException {
         Timber.v("beginMmsConnectivity");
         // Take a wake lock so we don't fall asleep before the message is downloaded.
@@ -519,7 +533,7 @@ public class TransactionService extends Service implements Observer {
             }
         }
 
-        int result = mConnMgr.startUsingNetworkFeature(ConnectivityManager.TYPE_MOBILE, "enableMMS");
+        int result = startLegacyMmsNetwork();
 
         Timber.v("beginMmsConnectivity: result=" + result);
 
@@ -540,9 +554,7 @@ public class TransactionService extends Service implements Observer {
             // cancel timer for renewal of lease
             mServiceHandler.removeMessages(EVENT_CONTINUE_MMS_CONNECTIVITY);
             if (mConnMgr != null && Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-                mConnMgr.stopUsingNetworkFeature(
-                        ConnectivityManager.TYPE_MOBILE,
-                        "enableMMS");
+                stopLegacyMmsNetwork();
             }
         } finally {
             releaseWakeLock();

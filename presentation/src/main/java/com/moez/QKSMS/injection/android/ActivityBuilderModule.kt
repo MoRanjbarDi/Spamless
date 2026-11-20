@@ -47,6 +47,10 @@ import dagger.android.ContributesAndroidInjector
 abstract class ActivityBuilderModule {
 
     @ActivityScope
+    @ContributesAndroidInjector(modules = [])
+    abstract fun bindTrashActivity(): com.moez.QKSMS.feature.trash.TrashActivity
+
+    @ActivityScope
     @ContributesAndroidInjector(modules = [MainActivityModule::class])
     abstract fun bindMainActivity(): MainActivity
 

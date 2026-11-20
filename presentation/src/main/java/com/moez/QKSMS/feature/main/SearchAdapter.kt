@@ -47,58 +47,43 @@ class SearchAdapter @Inject constructor(
     private val highlightColor: Int by lazy { colors.theme().highlight }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): QkViewHolder {
-        val layoutInflater = LayoutInflater.from(parent.context)
-        val view = layoutInflater.inflate(R.layout.search_list_item, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.search_list_item, parent, false)
         return QkViewHolder(view).apply {
             view.setOnClickListener {
+                if (adapterPosition < 0) return@setOnClickListener
                 val result = getItem(adapterPosition)
-                navigator.showConversation(result.conversation.id, result.query.takeIf { result.messages > 0 })
+                navigator.showConversation(result.conversation.id, result.query, result.message.id)
             }
         }
     }
 
     override fun onBindViewHolder(holder: QkViewHolder, position: Int) {
-        val previous = data.getOrNull(position - 1)
         val result = getItem(position)
-
-        holder.resultsHeader.setVisible(result.messages > 0 && previous?.messages == 0)
-
-        val query = result.query
-        val title = SpannableString(result.conversation.getTitle())
-        var index = title.removeAccents().indexOf(query, ignoreCase = true)
-
-        while (index >= 0) {
-            title.setSpan(BackgroundColorSpan(highlightColor), index, index + query.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            index = title.indexOf(query, index + query.length, true)
-        }
-        holder.title.text = title
-
+        holder.resultsHeader.setVisible(false)
+        holder.title.text = highlight(result.conversation.getTitle(), result.query)
         holder.avatars.recipients = result.conversation.recipients
+        holder.date.setVisible(true)
+        holder.date.text = dateFormatter.getConversationTimestamp(result.message.date)
+        val snippet = com.moez.QKSMS.util.SearchSnippet.create(result.message.getSummary(), result.query)
+        holder.snippet.text = highlight(if (result.message.isMe())
+            context.getString(R.string.main_sender_you, snippet) else snippet, result.query)
+    }
 
-        when (result.messages == 0) {
-            true -> {
-                holder.date.setVisible(true)
-                holder.date.text = dateFormatter.getConversationTimestamp(result.conversation.date)
-                holder.snippet.text = when (result.conversation.me) {
-                    true -> context.getString(R.string.main_sender_you, result.conversation.snippet)
-                    false -> result.conversation.snippet
-                }
-            }
-
-            false -> {
-                holder.date.setVisible(false)
-                holder.snippet.text = context.getString(R.string.main_message_results, result.messages)
-            }
+    private fun highlight(text: String, query: String): SpannableString {
+        val result = SpannableString(text)
+        if (query.isEmpty()) return result
+        var index = text.indexOf(query, ignoreCase = true)
+        while (index >= 0) {
+            result.setSpan(BackgroundColorSpan(highlightColor), index, index + query.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            index = text.indexOf(query, index + query.length, ignoreCase = true)
         }
+        return result
     }
 
-    override fun areItemsTheSame(old: SearchResult, new: SearchResult): Boolean {
-        return old.conversation.id == new.conversation.id && old.messages > 0 == new.messages > 0
-    }
+    override fun areItemsTheSame(old: SearchResult, new: SearchResult) = old.message.id == new.message.id
 
-    override fun areContentsTheSame(old: SearchResult, new: SearchResult): Boolean {
-        return old.query == new.query && // Queries are the same
-                old.conversation.id == new.conversation.id // Conversation id is the same
-                && old.messages == new.messages // Result count is the same
-    }
+    override fun areContentsTheSame(old: SearchResult, new: SearchResult) =
+        old.query == new.query && old.message.getSummary() == new.message.getSummary() &&
+            old.message.date == new.message.date && old.conversation.getTitle() == new.conversation.getTitle()
 }

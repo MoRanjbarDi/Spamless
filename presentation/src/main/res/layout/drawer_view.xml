@@ -69,7 +69,7 @@
             <ImageView
                 android:id="@+id/spamIcon"
                 style="@style/DrawerIcon"
-                android:src="@drawable/ic_block_white_24dp"
+                android:src="@drawable/ic_spam_24dp"
                 tools:tint="?android:attr/textColorSecondary" />
             <com.moez.QKSMS.common.widget.QkTextView
                 style="@style/DrawerText"
@@ -82,6 +82,12 @@
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
             android:background="?android:attr/divider" />
+
+        <LinearLayout android:id="@+id/trash" style="@style/DrawerRow">
+            <ImageView style="@style/DrawerIcon" android:src="@drawable/ic_delete_white_24dp"
+                android:tint="?android:attr/textColorSecondary" />
+            <com.moez.QKSMS.common.widget.QkTextView style="@style/DrawerText" android:text="@string/title_trash" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/backup"
@@ -176,6 +182,7 @@
 
         <LinearLayout
             android:id="@+id/plus"
+            android:visibility="gone"
             style="@style/DrawerRow">
 
             <ImageView
@@ -206,6 +213,7 @@
 
         <LinearLayout
             android:id="@+id/invite"
+            android:visibility="gone"
             style="@style/DrawerRow">
 
             <ImageView
@@ -221,6 +229,7 @@
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/plusBanner"
+            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
@@ -281,6 +290,7 @@
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/rateLayout"
+            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"

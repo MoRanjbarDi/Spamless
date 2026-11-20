@@ -28,6 +28,8 @@ interface MainView : QkView<MainState> {
     val onNewIntentIntent: Observable<Intent>
     val activityResumedIntent: Observable<Boolean>
     val showGenerateKeyIntent: Observable<Boolean>
+    val refreshIntent: Observable<Unit>
+    val inboxTabIntent: Observable<InboxTab>
     val queryChangedIntent: Observable<CharSequence>
     val composeIntent: Observable<Unit>
     val drawerOpenIntent: Observable<Boolean>
@@ -56,4 +58,4 @@ interface MainView : QkView<MainState> {
     fun showGenerateKeyDialog()
 }
 
-enum class NavItem { BACK, INBOX, ARCHIVED, SPAM, BACKUP, SCHEDULED, BLOCKING, SETTINGS, PLUS, HELP, INVITE }
+enum class NavItem { BACK, INBOX, ARCHIVED, SPAM, TRASH, BACKUP, SCHEDULED, BLOCKING, SETTINGS, PLUS, HELP, INVITE }

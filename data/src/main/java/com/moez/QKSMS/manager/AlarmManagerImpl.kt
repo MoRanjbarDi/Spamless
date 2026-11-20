@@ -18,6 +18,8 @@
  */
 package com.moez.QKSMS.manager
 
+import com.klinker.android.send_message.PendingIntents
+
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -29,12 +31,14 @@ class AlarmManagerImpl @Inject constructor(private val context: Context) : Alarm
 
     override fun getScheduledMessageIntent(id: Long): PendingIntent {
         val intent = Intent(context, SendScheduledMessageReceiver::class.java).putExtra("id", id)
-        return PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_UPDATE_CURRENT)
+        return PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
     }
 
     override fun setAlarm(date: Long, intent: PendingIntent) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= 31 && !alarmManager.canScheduleExactAlarms()) {
+            alarmManager.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, date, intent)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, date, intent)
         } else {
             alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, date, intent)

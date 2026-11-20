@@ -32,7 +32,7 @@ class MarkRead @Inject constructor(
     override fun buildObservable(params: List<Long>): Flowable<*> {
         return Flowable.just(params.toLongArray())
                 .doOnNext { threadIds -> messageRepo.markRead(*threadIds) }
-                .doOnNext { threadIds -> threadIds.forEach(notificationManager::update) }
+                .doOnNext { threadIds -> threadIds.forEach { notificationManager.update(it) } }
                 .flatMap { updateBadge.buildObservable(Unit) } // Update the badge
     }
 

@@ -37,16 +37,10 @@ class RatingManagerImpl @Inject constructor(
     private val rated = rxPrefs.getBoolean("rated", false)
     private val dismissed = rxPrefs.getBoolean("dismissed", false)
 
-    override val shouldShowRating = Observables.combineLatest(
-            sessions.asObservable(),
-            rated.asObservable(),
-            dismissed.asObservable()
-    ) { sessions, rated, dismissed ->
-        sessions > RATING_THRESHOLD && !rated && !dismissed
-    }
+    override val shouldShowRating = io.reactivex.Observable.just(false)
 
     override fun addSession() {
-        sessions.set(sessions.get() + 1)
+        // Rating prompts are disabled in Spamless.
     }
 
     override fun rate() {

@@ -72,7 +72,7 @@ abstract class QkAdapter<T> : RecyclerView.Adapter<QkViewHolder>() {
             false -> selection.add(id)
         }
 
-        selectionChanges.onNext(selection)
+        selectionChanges.onNext(selection.toList())
         return true
     }
 
@@ -82,7 +82,7 @@ abstract class QkAdapter<T> : RecyclerView.Adapter<QkViewHolder>() {
 
     fun clearSelection() {
         selection.clear()
-        selectionChanges.onNext(selection)
+        selectionChanges.onNext(selection.toList())
         notifyDataSetChanged()
     }
 

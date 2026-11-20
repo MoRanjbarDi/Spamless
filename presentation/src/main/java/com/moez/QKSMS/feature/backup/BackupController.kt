@@ -53,6 +53,7 @@ class BackupController : QkController<BackupView, BackupState, BackupPresenter>(
     @Inject lateinit var dateFormatter: DateFormatter
     @Inject override lateinit var presenter: BackupPresenter
 
+    private val externalBackupSelected: Subject<BackupFile> = PublishSubject.create()
     private val activityVisibleSubject: Subject<Unit> = PublishSubject.create()
     private val confirmRestoreSubject: Subject<Unit> = PublishSubject.create()
     private val stopRestoreSubject: Subject<Unit> = PublishSubject.create()
@@ -63,6 +64,12 @@ class BackupController : QkController<BackupView, BackupState, BackupPresenter>(
 
         AlertDialog.Builder(activity!!)
                 .setView(view)
+                .setNeutralButton(R.string.backup_choose_file) { _, _ ->
+                    startActivityForResult(android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT)
+                        .addCategory(android.content.Intent.CATEGORY_OPENABLE).setType("application/json")
+                        .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                            android.content.Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION), 731)
+                }
                 .setCancelable(true)
                 .create()
     }
@@ -177,7 +184,7 @@ class BackupController : QkController<BackupView, BackupState, BackupPresenter>(
 
     override fun restoreClicks(): Observable<*> = restore.clicks()
 
-    override fun restoreFileSelected(): Observable<BackupFile> = adapter.backupSelected
+    override fun restoreFileSelected(): Observable<BackupFile> = Observable.merge(adapter.backupSelected, externalBackupSelected)
             .doOnNext { backupFilesDialog.dismiss() }
 
     override fun restoreConfirmed(): Observable<*> = confirmRestoreSubject
@@ -190,6 +197,17 @@ class BackupController : QkController<BackupView, BackupState, BackupPresenter>(
 
     override fun requestStoragePermission() {
         ActivityCompat.requestPermissions(activity!!, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 0)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 731 && resultCode == android.app.Activity.RESULT_OK) {
+            data?.data?.let { uri ->
+                try { activity?.contentResolver?.takePersistableUriPermission(uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch (_: SecurityException) { }
+                externalBackupSelected.onNext(BackupFile(uri.toString(), System.currentTimeMillis(), 0, 0))
+            }
+        }
     }
 
     override fun selectFile() = backupFilesDialog.show()

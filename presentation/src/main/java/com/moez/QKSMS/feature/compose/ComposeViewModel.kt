@@ -25,7 +25,7 @@ import android.provider.ContactsContract
 import android.telephony.SmsMessage
 import android.util.Base64
 import androidx.core.content.getSystemService
-import by.cyberpartisan.psms.PSmsEncryptor
+import com.moez.QKSMS.util.SecureMessages
 import com.moez.QKSMS.R
 import com.moez.QKSMS.common.Navigator
 import com.moez.QKSMS.common.base.QkViewModel
@@ -74,11 +74,14 @@ import by.cyberpartisan.psms.Message as PSmsMessage
 class ComposeViewModel @Inject constructor(
     @Named("query") private val query: String,
     @Named("threadId") private val threadId: Long,
+    @Named("messageId") private val messageId: Long,
     @Named("addresses") private val addresses: List<String>,
     @Named("text") private val sharedText: String,
     @Named("attachments") private val sharedAttachments: Attachments,
     private val contactRepo: ContactRepository,
     private val context: Context,
+    private val spamNotifications: com.moez.QKSMS.manager.NotificationManager,
+    private val spamBadge: com.moez.QKSMS.interactor.UpdateBadge,
     private val activeConversationManager: ActiveConversationManager,
     private val addScheduledMessage: AddScheduledMessage,
     private val billingManager: BillingManager,
@@ -108,11 +111,12 @@ class ComposeViewModel @Inject constructor(
     private val messages: Subject<List<Message>> = BehaviorSubject.create()
     private val selectedChips: Subject<List<Recipient>> = BehaviorSubject.createDefault(listOf())
     private val searchResults: Subject<List<Message>> = BehaviorSubject.create()
-    private val searchSelection: Subject<Long> = BehaviorSubject.createDefault(-1)
+    private val searchSelection: Subject<Long> = BehaviorSubject.createDefault(messageId)
 
     private var shouldShowContacts = threadId == 0L && addresses.isEmpty()
 
     init {
+        disposables += spamBadge
         val initialConversation = threadId.takeIf { it != 0L }
                 ?.let(conversationRepo::getConversationAsync)
                 ?.asObservable()
@@ -172,16 +176,19 @@ class ComposeViewModel @Inject constructor(
                 .takeUntil(state.filter { state -> !state.editingMode })
                 .subscribe(selectedChips::onNext)
 
-        // When the conversation changes, mark read, and update the recipientId and the messages for the adapter
-        disposables += conversation
+        // This preference changes only the visible query; messages stay in their original partitions.
+        val visibleConversation = conversation
                 .distinctUntilChanged { conversation -> conversation.id }
+                .switchMap { thread -> prefs.showSpamInThread(thread.id).asObservable()
+                    .map { includeSpam -> thread to (includeSpam && thread.id > 0) } }
+                .replay(1).refCount()
+        disposables += visibleConversation
                 .observeOn(AndroidSchedulers.mainThread())
-                .map { conversation ->
-                    val messages = messageRepo.getMessages(conversation.id)
-                    newState { copy(threadId = conversation.id, messages = Pair(conversation, messages)) }
-                    messages
+                .switchMap { (thread, includeSpam) ->
+                    val result = messageRepo.getMessages(thread.id, includeSpam = includeSpam)
+                    newState { copy(threadId = thread.id, showSpamMessages = includeSpam, messages = Pair(thread, result)) }
+                    result.asObservable()
                 }
-                .switchMap { messages -> messages.asObservable() }
                 .subscribe(messages::onNext)
 
         disposables += conversation
@@ -195,14 +202,11 @@ class ComposeViewModel @Inject constructor(
         disposables += attachments
                 .subscribe { attachments -> newState { copy(attachments = attachments) } }
 
-        disposables += conversation
-                .map { conversation -> conversation.id }
-                .distinctUntilChanged()
-                .withLatestFrom(state) { id, state -> messageRepo.getMessages(id, state.query) }
+        disposables += visibleConversation
+                .withLatestFrom(state) { (thread, includeSpam), state -> messageRepo.getMessages(thread.id, state.query, includeSpam) }
                 .switchMap { messages -> messages.asObservable() }
                 .takeUntil(state.map { it.query }.filter { it.isEmpty() })
-                .filter { messages -> messages.isLoaded }
-                .filter { messages -> messages.isValid }
+                .filter { messages -> messages.isLoaded && messages.isValid }
                 .subscribe(searchResults::onNext)
 
         disposables += Observables.combineLatest(searchSelection, searchResults) { selected, messages ->
@@ -309,6 +313,13 @@ class ComposeViewModel @Inject constructor(
                 .autoDisposable(view.scope())
                 .subscribe { newState { copy() } }
 
+        view.optionsItemIntent
+                .filter { it == R.id.show_spam_messages }
+                .withLatestFrom(state) { _, state -> state }
+                .filter { it.threadId > 0 }
+                .autoDisposable(view.scope())
+                .subscribe { state -> prefs.showSpamInThread(state.threadId).set(!state.showSpamMessages) }
+
         // Open the phone dialer if the call button is clicked
         view.optionsItemIntent
                 .filter { it == R.id.call }
@@ -333,7 +344,7 @@ class ComposeViewModel @Inject constructor(
                     val messages = messageIds.mapNotNull(messageRepo::getMessage).sortedBy { it.date }
 
                     fun Message.getDecodedText() = encryptionKey?.let {
-                        PSmsEncryptor().tryDecode(getText(), Base64.decode(encryptionKey, Base64.DEFAULT)).text
+                        SecureMessages().tryDecode(getText(), Base64.decode(encryptionKey, Base64.DEFAULT), (date) < prefs.secureProtocolSince.get()).text
                     } ?: getText()
 
                     val text = when (messages.size) {
@@ -361,6 +372,23 @@ class ComposeViewModel @Inject constructor(
                 .map(messageDetailsFormatter::format)
                 .autoDisposable(view.scope())
                 .subscribe { view.showDetails(it) }
+
+        view.optionsItemIntent.filter { it == R.id.not_spam_message }
+            .withLatestFrom(view.messagesSelectedIntent) { _, ids -> ids.toList() }
+            .filter { it.isNotEmpty() }
+            .doOnNext { view.clearSelection() }
+            .flatMapSingle { ids -> io.reactivex.Single.fromCallable {
+                    val affected = conversationRepo.markNotSpam(emptyList(), ids)
+                    affected.forEach(spamNotifications::clear)
+                    if (affected.isNotEmpty()) spamBadge.execute(Unit)
+                    affected
+                }
+                .subscribeOn(Schedulers.io())
+                .onErrorReturn { error -> timber.log.Timber.w(error, "Unable to mark messages as not spam"); emptyList<Long>() } }
+            .observeOn(AndroidSchedulers.mainThread())
+            .autoDisposable(view.scope()).subscribe { affected ->
+                context.makeToast(if (affected.isEmpty()) R.string.spam_action_failed else R.string.spam_action_done)
+            }
 
         // Delete the messages
         view.optionsItemIntent
@@ -420,7 +448,10 @@ class ComposeViewModel @Inject constructor(
                 .subscribe { prefs.sendAsGroup.set(!prefs.sendAsGroup.get()) }
 
         // Scroll to search position
-        searchSelection
+        Observables.combineLatest(searchSelection, messages) { selected, loaded ->
+                    selected.takeIf { id -> loaded.any { it.id == id } } ?: -1L
+                }
+                .withLatestFrom(state) { id, current -> if (current.query.isNotEmpty()) id else -1L }
                 .filter { id -> id != -1L }
                 .doOnNext { id -> newState { copy(searchSelectionId = id) } }
                 .autoDisposable(view.scope())
@@ -482,12 +513,14 @@ class ComposeViewModel @Inject constructor(
                         view.activityVisibleIntent.distinctUntilChanged(),
                         conversation.mapNotNull { conversation ->
                             conversation.takeIf { it.isValid }?.id
-                        }.distinctUntilChanged())
-                { visible, threadId ->
+                        }.distinctUntilChanged(),
+                        state.map { it.showSpamMessages }.distinctUntilChanged())
+                { visible, threadId, includeSpam ->
                     when (visible) {
                         true -> {
                             activeConversationManager.setActiveConversation(threadId)
-                            markRead.execute(listOf(threadId))
+                            markRead.execute(if (includeSpam && threadId > 0)
+                                listOf(threadId, com.moez.QKSMS.util.SpamThread.spamId(threadId)) else listOf(threadId))
                         }
 
                         false -> activeConversationManager.setActiveConversation(null)
@@ -659,32 +692,7 @@ class ComposeViewModel @Inject constructor(
                 .filter { permissionManager.isDefaultSms().also { if (!it) view.requestDefaultSms() } }
                 .filter { permissionManager.hasSendSms().also { if (!it) view.requestSmsPermission() } }
                 .withLatestFrom(view.textChangedIntent, conversation, state) { _, body, conversation, state ->
-                    if (state.encryptionEnabled) {
-                        state.encryptionKey?.let { encryptionKey ->
-                            val encryptionSchemeId = conversation.encodingSchemeId
-                                .takeIf { it != Conversation.SCHEME_NOT_DEF }
-                                ?: prefs.encodingScheme.get()
-
-                            val legacyEncryptionEnabled = conversation?.legacyEncryptionEnabled
-                                ?: prefs.legacyEncryptionEnabled.get()
-
-                            if (legacyEncryptionEnabled) {
-                                PSmsEncryptor().encodeLegacy(
-                                    message = PSmsMessage(body.toString()),
-                                    key = Base64.decode(encryptionKey, Base64.DEFAULT),
-                                    encryptionSchemeId = encryptionSchemeId
-                                )
-                            } else {
-                                PSmsEncryptor().encode(
-                                    message = PSmsMessage(body.toString()),
-                                    key = Base64.decode(encryptionKey, Base64.DEFAULT),
-                                    encryptionSchemeId = encryptionSchemeId
-                                )
-                            }
-                        }
-                    } else {
-                        body
-                    }
+                    body
                 }
                 .map { body -> body.toString() }
                 .withLatestFrom(state, attachments, conversation, selectedChips) { body, state, attachments,

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="title_trash">Trash</string>
+    <string name="trash_info">Deleted messages are kept here for %1$d days before they are permanently removed.</string>
+    <string name="trash_empty">Trash is empty</string>
+    <string name="trash_enabled">Use Trash</string>
+    <string name="trash_enabled_summary">Keep deleted messages so you can restore them. Turning this off affects future deletions only.</string>
+    <string name="trash_retention">Keep deleted messages</string>
+    <string name="trash_retention_message">Permanently remove messages after this many days in Trash.</string>
+    <string name="trash_retention_error">Enter a number from 1 to 3650.</string>
+    <string name="trash_shorter_warning">Messages already past the new retention limit will be permanently deleted. This cannot be undone.</string>
+    <string name="trash_restore">Restore</string>
+    <string name="trash_restore_all">Restore all</string>
+    <string name="trash_delete_permanently">Delete permanently</string>
+    <string name="trash_empty_all">Empty Trash</string>
+    <string name="trash_expires">Deletes automatically %1$s</string>
+    <string name="trash_error">Unable to update Trash. Your remaining messages have been kept. Please try again.</string>
+    <string name="settings_default_inbox">Default inbox tab</string>
+    <plurals name="trash_retention_days"><item quantity="one">%d day</item><item quantity="other">%d days</item></plurals>
+    <plurals name="trash_delete_confirmation"><item quantity="one">Permanently delete %d message? This cannot be undone.</item><item quantity="other">Permanently delete %d messages? This cannot be undone.</item></plurals>
+    <string-array name="default_inbox_tabs"><item>@string/inbox_tab_all</item><item>@string/inbox_tab_contacts</item><item>@string/inbox_tab_non_contacts</item></string-array>
+    <string name="trash_move">Move to Trash</string>
+    <string name="trash_move_title">Move to Trash?</string>
+    <plurals name="trash_move_conversations">
+        <item quantity="one">Move the messages from %1$d conversation to Trash? They will be permanently deleted after %2$d days.</item>
+        <item quantity="other">Move the messages from %1$d conversations to Trash? They will be permanently deleted after %2$d days.</item>
+    </plurals>
+    <plurals name="trash_move_messages">
+        <item quantity="one">%1$d message will be moved to Trash now and kept for %2$d days.</item>
+        <item quantity="other">%1$d messages will be moved to Trash now and kept for %2$d days.</item>
+    </plurals>
+</resources>

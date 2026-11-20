@@ -81,7 +81,8 @@ public class MmsConfigManager {
                     new IntentFilter("LOADED");
 
             try {
-                context.registerReceiver(mReceiver, intentFilterLoaded);
+                if (Build.VERSION.SDK_INT >= 33) context.registerReceiver(mReceiver, intentFilterLoaded, Context.RECEIVER_NOT_EXPORTED);
+                else context.registerReceiver(mReceiver, intentFilterLoaded);
             } catch (Exception e) {
 
             }

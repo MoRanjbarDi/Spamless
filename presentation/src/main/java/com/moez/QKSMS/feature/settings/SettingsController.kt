@@ -102,6 +102,11 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
     private val endTimeSelectedSubject: Subject<Pair<Int, Int>> = PublishSubject.create()
     private val signatureSubject: Subject<String> = PublishSubject.create()
     private val autoDeleteSubject: Subject<Int> = PublishSubject.create()
+    private val spamAutoDeleteSubject: Subject<Int> = PublishSubject.create()
+    private val spamAutoDeleteDialog: AutoDeleteDialog by lazy {
+        AutoDeleteDialog(activity!!, spamAutoDeleteSubject::onNext, R.string.spam_auto_delete,
+            R.string.spam_auto_delete_dialog_message)
+    }
     // partisan
     private val globalEncryptionKeySubject: Subject<String> = PublishSubject.create()
     private val smsForResetSubject: Subject<String> = PublishSubject.create()
@@ -119,9 +124,12 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
     }
 
     private fun renderSpamSettings() {
+        spamVibration.checkbox.isChecked = prefs.spamVibration.get()
         iranAdsSpam.checkbox.isChecked = prefs.iranAdsSpam.get()
         customSpamRegex.summary = prefs.customSpamRegex.get().takeIf { it.isNotBlank() }
             ?: context.getString(R.string.spam_custom_regex_summary)
+        spamNotifications.summary = context.resources.getStringArray(R.array.spam_notification_modes)[
+            prefs.spamNotifications.get().coerceIn(0, 2)]
         spamArrivalSound.summary = context.resources.getStringArray(R.array.spam_arrival_sounds)[
             prefs.spamArrivalSound.get().coerceIn(0, 2)]
     }
@@ -178,6 +186,41 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
             renderSpamSettings()
         }
         customSpamRegex.setOnClickListener { showSpamRegexDialog() }
+        spamNotifications.setOnClickListener {
+            AlertDialog.Builder(activity!!)
+                .setTitle(R.string.spam_notifications)
+                .setSingleChoiceItems(R.array.spam_notification_modes, prefs.spamNotifications.get().coerceIn(0, 2)) { dialog, which ->
+                    prefs.spamNotifications.set(which)
+                    // Apply the new policy immediately to notifications that are already visible.
+                    val manager = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                    if (Build.VERSION.SDK_INT < 23) io.realm.Realm.getDefaultInstance().use { realm ->
+                        realm.where(com.moez.QKSMS.model.Conversation::class.java).lessThan("id", 0L)
+                            .findAll().forEach {
+                                if (which == 0) manager.cancel(it.id.toInt())
+                                com.moez.QKSMS.receiver.SpamNotificationTimeoutReceiver.setTimeout(context, it.id, which == 1)
+                            }
+                    }
+                    if (Build.VERSION.SDK_INT >= 23) manager.activeNotifications
+                        .filter { it.id < -1 }.forEach { posted ->
+                            com.moez.QKSMS.receiver.SpamNotificationTimeoutReceiver.setTimeout(context, posted.id.toLong(), which == 1)
+                            if (which == 0) manager.cancel(posted.id)
+                            else if (Build.VERSION.SDK_INT >= 26) {
+                                val notification = android.app.Notification.Builder.recoverBuilder(context, posted.notification)
+                                    .setOnlyAlertOnce(true)
+                                    .setTimeoutAfter(if (which == 1) 10_000L else 0L).build()
+                                manager.notify(posted.id, notification)
+                            }
+                        }
+                    renderSpamSettings()
+                    dialog.dismiss()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
+        spamVibration.setOnClickListener {
+            prefs.spamVibration.set(!prefs.spamVibration.get())
+            renderSpamSettings()
+        }
         spamArrivalSound.setOnClickListener {
             AlertDialog.Builder(activity!!)
                 .setTitle(R.string.spam_arrival_sound)
@@ -190,7 +233,51 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
                 .show()
         }
 
-        about.summary = context.getString(R.string.settings_version, BuildConfig.VERSION_NAME, "3.9.4", by.cyberpartisan.psms.VERSION.toString())
+        trashEnabled.setOnClickListener { prefs.trashEnabled.set(!prefs.trashEnabled.get()) }
+        trashRetention.setOnClickListener { showTrashRetentionDialog() }
+        defaultInboxTab.setOnClickListener {
+            AlertDialog.Builder(activity!!).setTitle(R.string.settings_default_inbox)
+                .setSingleChoiceItems(R.array.default_inbox_tabs, prefs.defaultInboxTab.get().coerceIn(0, 2)) { dialog, index ->
+                    prefs.defaultInboxTab.set(index)
+                    dialog.dismiss()
+                }.setNegativeButton(android.R.string.cancel, null).show()
+        }
+        about.summary = context.getString(R.string.settings_version, BuildConfig.VERSION_NAME)
+    }
+
+    private fun showTrashRetentionDialog() {
+        val field = android.widget.EditText(activity!!).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            hint = context.getString(R.string.settings_auto_delete_dialog_hint)
+            setText(prefs.trashRetentionDays.get().toString())
+            selectAll()
+        }
+        val dialog = AlertDialog.Builder(activity!!).setTitle(R.string.trash_retention)
+            .setMessage(R.string.trash_retention_message).setView(field)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.button_save, null).create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val days = field.text.toString().toIntOrNull()
+                if (days == null || days !in 1..3650) {
+                    field.error = context.getString(R.string.trash_retention_error)
+                    return@setOnClickListener
+                }
+                if (days < prefs.trashRetentionDays.get()) {
+                    AlertDialog.Builder(activity!!).setTitle(R.string.trash_retention)
+                        .setMessage(R.string.trash_shorter_warning)
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .setPositiveButton(R.string.button_save) { _, _ ->
+                            prefs.trashRetentionDays.set(days)
+                            dialog.dismiss()
+                        }.show()
+                } else {
+                    prefs.trashRetentionDays.set(days)
+                    dialog.dismiss()
+                }
+            }
+        }
+        dialog.show()
     }
 
     override fun onAttach(view: View) {
@@ -203,7 +290,7 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
     override fun preferenceClicks(): Observable<PreferenceView> = (0 until preferences.childCount)
             .map { index -> preferences.getChildAt(index) }
             .mapNotNull { view -> view as? PreferenceView }
-            .filter { it.id !in setOf(R.id.iranAdsSpam, R.id.customSpamRegex, R.id.spamArrivalSound) }
+            .filter { it.id !in setOf(R.id.spamVibration, R.id.iranAdsSpam, R.id.customSpamRegex, R.id.spamArrivalSound, R.id.spamNotifications, R.id.trashEnabled, R.id.trashRetention, R.id.defaultInboxTab) }
             .map { preference -> preference.clicks().map { preference } }
             .let { preferences -> Observable.merge(preferences) }
 
@@ -224,6 +311,7 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
     override fun signatureChanged(): Observable<String> = signatureSubject
 
     override fun autoDeleteChanged(): Observable<Int> = autoDeleteSubject
+    override fun spamAutoDeleteChanged(): Observable<Int> = spamAutoDeleteSubject
 
     override fun mmsSizeSelected(): Observable<Int> = mmsSizeDialog.adapter.menuItemClicks
 
@@ -235,6 +323,10 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
     override fun deleteEncryptedAfterSelected(): Observable<Int> = deleteEncryptedAfterDialog.adapter.menuItemClicks
 
     override fun render(state: SettingsState) {
+        trashEnabled.checkbox.isChecked = state.trashEnabled
+        trashRetention.summary = context.resources.getQuantityString(R.plurals.trash_retention_days,
+            state.trashRetentionDays, state.trashRetentionDays)
+        defaultInboxTab.summary = context.resources.getStringArray(R.array.default_inbox_tabs)[state.defaultInboxTab]
         themePreview.setBackgroundTint(state.theme)
         night.summary = state.nightModeSummary
         nightModeDialog.adapter.selectedItem = state.nightModeId
@@ -243,8 +335,6 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
         nightEnd.setVisible(state.nightModeId == Preferences.NIGHT_MODE_AUTO)
         nightEnd.summary = state.nightEnd
 
-        black.setVisible(state.nightModeId != Preferences.NIGHT_MODE_OFF)
-        black.checkbox.isChecked = state.black
 
         autoEmoji.checkbox.isChecked = state.autoEmojiEnabled
 
@@ -270,6 +360,12 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
             0 -> context.getString(R.string.settings_auto_delete_never)
             else -> context.resources.getQuantityString(
                     R.plurals.settings_auto_delete_summary, state.autoDelete, state.autoDelete)
+        }
+
+        spamAutoDelete.summary = when (state.spamAutoDelete) {
+            0 -> context.getString(R.string.settings_auto_delete_never)
+            else -> context.resources.getQuantityString(R.plurals.settings_auto_delete_summary,
+                state.spamAutoDelete, state.spamAutoDelete)
         }
 
         longAsMms.checkbox.isChecked = state.longAsMms
@@ -338,12 +434,15 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
     override fun showSignatureDialog(signature: String) = signatureDialog.setText(signature).show()
 
     override fun showAutoDeleteDialog(days: Int) = autoDeleteDialog.setExpiry(days).show()
+    override fun showSpamAutoDeleteDialog(days: Int) = spamAutoDeleteDialog.setExpiry(days).show()
 
     override suspend fun showAutoDeleteWarningDialog(messages: Int): Boolean = withContext(Dispatchers.Main) {
         suspendCancellableCoroutine<Boolean> { cont ->
             AlertDialog.Builder(activity!!)
                     .setTitle(R.string.settings_auto_delete_warning)
-                    .setMessage(context.resources.getString(R.string.settings_auto_delete_warning_message, messages))
+                    .setMessage(if (prefs.trashEnabled.get()) context.resources.getQuantityString(
+                        R.plurals.trash_move_messages, messages, messages, prefs.trashRetentionDays.get())
+                        else context.getString(R.string.settings_auto_delete_warning_message, messages))
                     .setOnCancelListener { cont.resume(false) }
                     .setNegativeButton(R.string.button_cancel) { _, _ -> cont.resume(false) }
                     .setPositiveButton(R.string.button_yes) { _, _ -> cont.resume(true) }

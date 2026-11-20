@@ -18,4 +18,4 @@
  */
 package com.moez.QKSMS.model
 
-data class SearchResult(val query: String, val conversation: Conversation, val messages: Int)
+data class SearchResult(val query: String, val conversation: Conversation, val message: Message)

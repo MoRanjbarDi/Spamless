@@ -22,7 +22,7 @@ import androidx.core.app.NotificationCompat
 
 interface NotificationManager {
 
-    fun update(threadId: Long)
+    fun update(threadId: Long, alert: Boolean = false)
 
     fun clear(threadId: Long)
 

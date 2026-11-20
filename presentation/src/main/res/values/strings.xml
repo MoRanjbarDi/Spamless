@@ -18,7 +18,7 @@
   -->
 <resources>
 
-    <string name="app_name" translatable="false">P-SMS</string>
+    <string name="app_name" translatable="false">Spamless</string>
 
     <string name="shortcut_compose_long_label">New conversation</string>
     <string name="shortcut_compose_short_label">Compose</string>
@@ -30,7 +30,7 @@
     <string name="title_theme">Theme</string>
     <string name="title_conversations">Search inbox…</string>
     <string name="title_compose">Type a name or number</string>
-    <string name="title_qksms_plus" translatable="false">P-SMS</string>
+    <string name="title_qksms_plus" translatable="false">Spamless</string>
 
     <string name="setup_skip">Skip</string>
     <string name="setup_next">Continue</string>
@@ -63,11 +63,11 @@
     <string name="archived_empty_text">Your archived conversations will appear here</string>
     <string name="main_fab_cd">Start new conversation</string>
     <string name="main_default_sms_title">Love texting again</string>
-    <string name="main_default_sms_message">Make P-SMS your default SMS app</string>
+    <string name="main_default_sms_message">Make Spamless your default SMS app</string>
     <string name="main_default_sms_change">Change</string>
     <string name="main_permission_required">Permission required</string>
-    <string name="main_permission_sms">P-SMS needs permission to send and view SMS messages</string>
-    <string name="main_permission_contacts">P-SMS needs permission to view your contacts</string>
+    <string name="main_permission_sms">Spamless needs permission to send and view SMS messages</string>
+    <string name="main_permission_contacts">Spamless needs permission to view your contacts</string>
     <string name="main_permission_allow">Allow</string>
 
     <string name="drawer_inbox">Inbox</string>
@@ -79,10 +79,10 @@
     <string name="drawer_plus">Donate</string>
     <string name="drawer_help">Help &amp; feedback</string>
     <string name="drawer_invite">Invite friends</string>
-    <string name="drawer_plus_banner_title" translatable="false">P-SMS</string>
+    <string name="drawer_plus_banner_title" translatable="false">Spamless</string>
     <string name="drawer_plus_banner_summary">Unlock amazing new features, and support development</string>
 
-    <string name="rate_title">Enjoying QKSMS?</string>
+    <string name="rate_title">Enjoying Spamless?</string>
     <string name="rate_summary">Share some love and rate us on Google Play!</string>
     <string name="rate_okay">OKAY!</string>
     <string name="rate_dismiss">DISMISS</string>
@@ -111,7 +111,7 @@
     <string name="compose_vcard_label">Contact card</string>
     <string name="compose_scheduled_for">Scheduled for</string>
     <string name="compose_scheduled_future">Selected time must be in the future!</string>
-    <string name="compose_scheduled_plus">You must unlock QKSMS+ to use scheduled messaging</string>
+    <string name="compose_scheduled_plus">You must unlock Spamless to use scheduled messaging</string>
     <string name="compose_scheduled_toast">Added to scheduled messages</string>
     <string name="compose_hint">Write a message…</string>
     <string name="compose_menu_copy">Copy text</string>
@@ -170,7 +170,7 @@
     <string name="backup_never">Never</string>
     <string name="backup_restore_title">Restore</string>
     <string name="backup_restore_summary">Select a backup</string>
-    <string name="backup_restore_error_plus">Please unlock QKSMS+ to use backup and restore</string>
+    <string name="backup_restore_error_plus">Please unlock Spamless to use backup and restore</string>
     <string name="backup_restore_error_backup">Backup in progress…</string>
     <string name="backup_restore_error_restore">Restore in progress…</string>
     <string name="backup_restore_confirm_title">Restore from backup</string>
@@ -178,7 +178,7 @@
     <string name="backup_restore_stop_title">Stop restore</string>
     <string name="backup_restore_stop_message">Messages that have already been restored will remain on your device</string>
     <string name="backup_restore_dialog_title">Backups</string>
-    <string name="backup_restore_dialog_summary" translatable="false">/QKSMS/Backups</string>
+    <string name="backup_restore_dialog_summary" translatable="false">/Spamless/Backups</string>
     <string name="backup_restore_dialog_empty">No backups found</string>
     <plurals name="backup_message_count">
         <item quantity="zero">No messages</item>
@@ -276,8 +276,8 @@
     <string name="settings_mms_size_title">Auto-compress MMS attachments</string>
     <string name="settings_sync_title">Sync messages</string>
     <string name="settings_sync_summary">Re-sync your messages with the native Android SMS database</string>
-    <string name="settings_about_title">About P-SMS</string>
-    <string name="settings_version">Version %1$s\nQKSMS version %2$s\nP-SMS-lib version %3$s</string>
+    <string name="settings_about_title">About Spamless</string>
+    <string name="settings_version">Version %1$s</string>
     <string name="settings_logging_enabled">Debug logging enabled</string>
     <string name="settings_logging_disabled">Debug logging disabled</string>
 
@@ -289,8 +289,8 @@
     <string name="blocking_conversations">Blocked conversations</string>
 
     <string name="blocking_manager_title">Blocking Manager</string>
-    <string name="blocking_manager_qksms_title">P-SMS</string>
-    <string name="blocking_manager_qksms_summary">Built-in blocking functionality in P-SMS</string>
+    <string name="blocking_manager_qksms_title">Spamless</string>
+    <string name="blocking_manager_qksms_summary">Built-in blocking functionality in Spamless</string>
     <string name="blocking_manager_call_blocker_title" translatable="false">Call Blocker - Incoming/Outgoing</string>
     <string name="blocking_manager_call_blocker_summary">Block spam messages, numbers &amp; unknown calls with blacklist &amp; Schedule</string>
     <string name="blocking_manager_call_control_title" translatable="false">Call Control</string>
@@ -339,10 +339,10 @@
     <string name="qksms_plus_upgrade_d" translatable="false">One-time purchase of %1$s %2$s</string>
     <!-- Substitutions are for price and currency. Ex: Unlock + donate for $4.99 USD -->
     <string name="qksms_plus_upgrade_donate">Unlock + donate for %1$s %2$s</string>
-    <string name="qksms_plus_thanks_title">Thank you for supporting QKSMS!</string>
-    <string name="qksms_plus_thanks_summary">You now have access to all QKSMS+ features</string>
+    <string name="qksms_plus_thanks_title">Thank you for supporting Spamless!</string>
+    <string name="qksms_plus_thanks_summary">You now have access to all Spamless features</string>
     <string name="qksms_plus_error">An error has occurred, please try again</string>
-    <string name="qksms_plus_free_title">P-SMS is free application! If you\'d like to support development, a donation would be highly appreciated.</string>
+    <string name="qksms_plus_free_title">Spamless is free application! If you\'d like to support development, a donation would be highly appreciated.</string>
     <string name="qksms_plus_donate">Donate</string>
     <string name="qksms_plus_coming_soon">Coming soon</string>
     <string name="qksms_plus_themes_title">Premium themes</string>
@@ -364,7 +364,7 @@
     <string name="qksms_plus_respond_title">Auto-respond</string>
     <string name="qksms_plus_respond_summary">Automatically respond to incoming messages with a preset response</string>
     <string name="qksms_plus_more_title">More</string>
-    <string name="qksms_plus_more_summary">QKSMS is under active development, and your purchase will include all future QKSMS+ features!</string>
+    <string name="qksms_plus_more_summary">Spamless is under active development, and your purchase will include all future Spamless features!</string>
 
     <string name="widget_loading">Loading…</string>
     <string name="widget_more">View more conversations</string>
@@ -377,16 +377,16 @@
     <string name="qkreply_menu_view">Open conversation</string>
 
     <string name="theme_material">Material</string>
-    <string name="theme_plus" translatable="false">QKSMS+</string>
+    <string name="theme_plus" translatable="false">Spamless</string>
     <string name="theme_hex">HEX</string>
     <string name="theme_apply">Apply</string>
 
-    <string name="about_developer" translatable="false">Cpartisans, Moez Bhatti</string>
-    <string name="about_source" translatable="false">https://github.com/wrwrabbit/Partisan-SMS, based on https://github.com/moezbhatti/qksms</string>
-    <string name="about_changelog" translatable="false">https://github.com/wrwrabbit/Partisan-SMS/releases</string>
-    <string name="about_contact" translatable="false">https://t.me/cpartisans</string>
+    <string name="about_developer" translatable="false">Moranjbardi, Cpartisans, Moez Bhatti</string>
+    <string name="about_source" translatable="false">https://github.com/MoRanjbarDi/Spamless based on https://github.com/wrwrabbit/Partisan-SMS and based on https://github.com/moezbhatti/qksms</string>
+    <string name="about_changelog" translatable="false">https://github.com/MoRanjbarDi/Spamless/releases</string>
+    <string name="about_contact" translatable="false">https://moranjbardi.github.io/</string>
     <string name="about_license" translatable="false">GNU General Public License v3.0</string>
-    <string name="about_copyright" translatable="false">© 2014–2019</string>
+    <string name="about_copyright" translatable="false">© 2014–2026</string>
 
     <string name="changelog_title" translatable="false">New in QKSMS</string>
     <string name="changelog_version" translatable="false">Version %s</string>
@@ -419,7 +419,7 @@
 
     <string name="toast_copied">Copied</string>
     <string name="toast_archived">Archived conversation</string>
-    <string name="toast_qksms_plus">You must unlock QKSMS+ to use this</string>
+    <string name="toast_qksms_plus">You must unlock Spamless to use this</string>
 
     <plurals name="notification_new_messages">
         <item quantity="one">New message</item>
@@ -491,7 +491,7 @@
         <item>LOL</item>
         <item>That\'s okay</item>
     </string-array>
-    <string name="settings_category_hidden">Partisan settings</string>
+    <string name="settings_category_hidden">Encryption settings</string>
     <string name="conversation_encryption_key_title">Encryption Key</string>
     <string name="settings_delete_encrypted_after_title">Delete Encrypted Messages After</string>
     <string name="settings_delete_encrypted_after_default">Do not delete</string>
@@ -541,4 +541,13 @@
         <item>Disabled</item>
         <item>Enabled</item>
     </string-array>
+    <string name="searching_messages">Searching…</string>
+    <string name="spam_always_allow_sender">Always allow this sender</string>
+    <string name="spam_mark_not_spam">Mark as not spam</string>
+    <string name="spam_vibration">Vibrate for spam messages</string>
+    <string name="spam_vibration_summary">Respects silent mode and Do Not Disturb</string>
+    <string name="encryption_protocol">Secure message format</string>
+    <string name="encryption_protocol_summary">New encrypted messages require Spamless 1.2.0 or later on both phones. Older messages remain readable.</string>
+    <string name="spam_action_done">Moved out of spam</string>
+    <string name="spam_action_failed">Could not move the selected messages. Please try again.</string>
 </resources>

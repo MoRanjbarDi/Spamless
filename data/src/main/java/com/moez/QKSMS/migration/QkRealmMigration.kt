@@ -36,7 +36,7 @@ class QkRealmMigration @Inject constructor(
 ) : RealmMigration {
 
     companion object {
-        const val SchemaVersion: Long = 13
+        const val SchemaVersion: Long = 14
     }
 
     @SuppressLint("ApplySharedPref")
@@ -257,6 +257,12 @@ class QkRealmMigration @Inject constructor(
                     part.setBoolean("legacyEncryptionEnabled", false)
                 }
 
+            version++
+        }
+
+        if (version == 13L) {
+            realm.schema.get("Message")
+                ?.addField("deletedAt", Long::class.java, FieldAttribute.REQUIRED, FieldAttribute.INDEXED)
             version++
         }
 

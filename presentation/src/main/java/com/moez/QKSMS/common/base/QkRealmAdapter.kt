@@ -74,6 +74,12 @@ abstract class QkRealmAdapter<T : RealmModel> : RealmRecyclerViewAdapter<T, QkVi
         return selection.contains(id)
     }
 
+    fun selectItems(ids: List<Long>) {
+        selection = ids.distinct()
+        selectionChanges.onNext(selection)
+        notifyDataSetChanged()
+    }
+
     fun clearSelection() {
         selection = listOf()
         selectionChanges.onNext(selection)

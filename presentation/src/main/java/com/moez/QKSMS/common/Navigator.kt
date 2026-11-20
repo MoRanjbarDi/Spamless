@@ -94,6 +94,10 @@ class Navigator @Inject constructor(
         }
     }
 
+    fun showTrash() {
+        startActivity(Intent(context, com.moez.QKSMS.feature.trash.TrashActivity::class.java))
+    }
+
     fun showCompose(body: String? = null, images: List<Uri>? = null) {
         val intent = Intent(context, ComposeActivity::class.java)
         intent.putExtra(Intent.EXTRA_TEXT, body)
@@ -117,10 +121,11 @@ class Navigator @Inject constructor(
         startActivity(intent)
     }
 
-    fun showConversation(threadId: Long, query: String? = null) {
+    fun showConversation(threadId: Long, query: String? = null, messageId: Long = -1) {
         val intent = Intent(context, ComposeActivity::class.java)
                 .putExtra("threadId", threadId)
                 .putExtra("query", query)
+                .putExtra("messageId", messageId)
         startActivity(intent)
     }
 
@@ -153,22 +158,26 @@ class Navigator @Inject constructor(
     }
 
     fun showDeveloper() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/cpartisans"))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/MoRanjbarDi/Spamless"))
         startActivityExternal(intent)
     }
 
+    fun showContactWebsite() {
+        startActivityExternal(Intent(Intent.ACTION_VIEW, Uri.parse("https://moranjbardi.github.io/")))
+    }
+
     fun showSourceCode() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/wrwrabbit/Partisan-SMS"))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/MoRanjbarDi/Spamless"))
         startActivityExternal(intent)
     }
 
     fun showChangelog() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/wrwrabbit/Partisan-SMS/releases"))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/MoRanjbarDi/Spamless/releases"))
         startActivityExternal(intent)
     }
 
     fun showLicense() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/wrwrabbit/Partisan-SMS/blob/master/LICENSE"))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/MoRanjbarDi/Spamless/blob/master/LICENSE"))
         startActivityExternal(intent)
     }
 
@@ -184,12 +193,12 @@ class Navigator @Inject constructor(
     }
 
     fun showDonation() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/cpartisans/337"))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/MoRanjbarDi/Spamless"))
         startActivityExternal(intent)
     }
 
     fun showRating() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.moez.QKSMS"))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/MoRanjbarDi/Spamless"))
                 .addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY
                         or Intent.FLAG_ACTIVITY_NEW_DOCUMENT
                         or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
@@ -197,7 +206,7 @@ class Navigator @Inject constructor(
         try {
             startActivityExternal(intent)
         } catch (e: ActivityNotFoundException) {
-            val url = "http://play.google.com/store/apps/details?id=com.moez.QKSMS"
+            val url = "https://github.com/MoRanjbarDi/Spamless"
             startActivityExternal(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
         }
     }
@@ -230,7 +239,7 @@ class Navigator @Inject constructor(
     }
 
     fun showSupport() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/partisan_telegram_bot"))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/MoRanjbarDi/Spamless"))
         startActivityExternal(intent)
     }
 
@@ -238,7 +247,7 @@ class Navigator @Inject constructor(
         analyticsManager.track("Clicked Invite")
         Intent(Intent.ACTION_SEND)
                 .setType("text/plain")
-                .putExtra(Intent.EXTRA_TEXT, "https://t.me/cpartisans_security/83")
+                .putExtra(Intent.EXTRA_TEXT, "https://github.com/MoRanjbarDi/Spamless")
                 .let { Intent.createChooser(it, null) }
                 .let(::startActivityExternal)
     }

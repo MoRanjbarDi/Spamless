@@ -18,6 +18,8 @@
  */
 package com.moez.QKSMS.repository
 
+import com.klinker.android.send_message.PendingIntents
+
 import com.moez.QKSMS.util.SpamThread
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -36,7 +38,7 @@ import android.telephony.SmsManager
 import android.util.Base64
 import android.webkit.MimeTypeMap
 import androidx.core.content.contentValuesOf
-import by.cyberpartisan.psms.PSmsEncryptor
+import com.moez.QKSMS.util.SecureMessages
 import com.google.android.mms.ContentType
 import com.google.android.mms.MMSPart
 import com.google.android.mms.pdu_alt.MultimediaMessagePdu
@@ -95,10 +97,14 @@ class MessageRepositoryImpl @Inject constructor(
                 .subscribe()
     }
 
-    override fun getMessages(threadId: Long, query: String): RealmResults<Message> {
+    override fun getMessages(threadId: Long, query: String, includeSpam: Boolean): RealmResults<Message> {
         return Realm.getDefaultInstance()
                 .where(Message::class.java)
-                .equalTo("threadId", threadId)
+                .equalTo("deletedAt", 0L)
+                .let {
+                    if (includeSpam && threadId > 0) it.`in`("threadId", arrayOf(threadId, SpamThread.spamId(threadId)))
+                    else it.equalTo("threadId", threadId)
+                }
                 .let {
                     when (query.isEmpty()) {
                         true -> it
@@ -132,6 +138,7 @@ class MessageRepositoryImpl @Inject constructor(
     override fun getLastIncomingMessage(threadId: Long): RealmResults<Message> {
         return Realm.getDefaultInstance()
                 .where(Message::class.java)
+                .equalTo("deletedAt", 0L)
                 .equalTo("threadId", threadId)
                 .beginGroup()
                 .beginGroup()
@@ -171,6 +178,7 @@ class MessageRepositoryImpl @Inject constructor(
         return Realm.getDefaultInstance()
                 .where(MmsPart::class.java)
                 .equalTo("messages.threadId", threadId)
+                .equalTo("messages.deletedAt", 0L)
                 .beginGroup()
                 .contains("type", "image/")
                 .or()
@@ -185,7 +193,9 @@ class MessageRepositoryImpl @Inject constructor(
 
         val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(part.type) ?: return null
         val date = part.messages?.first()?.date
-        val dir = File(Environment.getExternalStorageDirectory(), "QKSMS/Media").apply { mkdirs() }
+        val root = if (android.os.Build.VERSION.SDK_INT >= 30) context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+            else Environment.getExternalStorageDirectory()
+        val dir = File(root, "Spamless/Media").apply { mkdirs() }
         val fileName = part.name?.takeIf { name -> name.endsWith(extension) }
                 ?: "${part.type.split("/").last()}_$date.$extension"
         var file: File
@@ -220,6 +230,7 @@ class MessageRepositoryImpl @Inject constructor(
         return Realm.getDefaultInstance()
                 .also { it.refresh() }
                 .where(Message::class.java)
+                .equalTo("deletedAt", 0L)
                 .equalTo("seen", false)
                 .equalTo("read", false)
                 .equalTo("threadId", threadId)
@@ -230,6 +241,7 @@ class MessageRepositoryImpl @Inject constructor(
     override fun getUnreadMessages(threadId: Long): RealmResults<Message> {
         return Realm.getDefaultInstance()
                 .where(Message::class.java)
+                .equalTo("deletedAt", 0L)
                 .equalTo("read", false)
                 .equalTo("threadId", threadId)
                 .sort("date")
@@ -290,20 +302,12 @@ class MessageRepositoryImpl @Inject constructor(
     }
 
     private fun deleteMessageWithDelay(message: Message, delay: Long) {
-        Realm.getDefaultInstance().use { realm ->
-            realm.refresh()
-
-            val messages = realm.where(Message::class.java)
-                    .equalTo("id", message.id)
-                    .findAll()
-            val uris = messages.map { it.getUri() }
-            uris.forEach { uri -> context.contentResolver.delete(uri, null, null) }
-        }
-
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val sendTime = System.currentTimeMillis() + delay
         val intent = getIntentForMessageDeletion(message.threadId, message.id)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= 31 && !alarmManager.canScheduleExactAlarms()) {
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, sendTime, intent)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, sendTime, intent)
         } else {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, sendTime, intent)
@@ -334,9 +338,16 @@ class MessageRepositoryImpl @Inject constructor(
         attachments: List<Attachment>,
         delay: Int
     ) {
+        val conversation = conversationRepository.getConversation(SpamThread.providerId(threadId))
+        val sharedKey = conversation?.encryptionKey?.takeIf { it.isNotBlank() } ?: prefs.globalEncryptionKey.get()
+        val encrypted = conversation?.encryptionEnabled ?: sharedKey.isNotBlank()
+        val transportBody = if (encrypted) {
+            require(sharedKey.isNotBlank()) { "Encryption key is missing" }
+            SecureMessages().encode(by.cyberpartisan.psms.Message(body), Base64.decode(sharedKey, Base64.DEFAULT))
+        } else body
         val signedBody = when {
-            prefs.signature.get().isEmpty() -> body
-            body.isNotEmpty() -> body + '\n' + prefs.signature.get()
+            encrypted || prefs.signature.get().isEmpty() -> transportBody
+            transportBody.isNotEmpty() -> transportBody + '\n' + prefs.signature.get()
             else -> prefs.signature.get()
         }
 
@@ -345,7 +356,7 @@ class MessageRepositoryImpl @Inject constructor(
                 ?: SmsManager.getDefault()
 
         // We only care about stripping SMS
-        val strippedBody = when (prefs.unicode.get()) {
+        val strippedBody = when (prefs.unicode.get() && !encrypted) {
             true -> StripAccents.stripAccents(signedBody)
             false -> signedBody
         }
@@ -361,7 +372,9 @@ class MessageRepositoryImpl @Inject constructor(
                 val intent = getIntentForDelayedSms(message.id)
 
                 val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (Build.VERSION.SDK_INT >= 31 && !alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, sendTime, intent)
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, sendTime, intent)
                 } else {
                     alarmManager.setExact(AlarmManager.RTC_WAKEUP, sendTime, intent)
@@ -469,6 +482,21 @@ class MessageRepositoryImpl @Inject constructor(
     }
 
     override fun sendSms(message: Message) {
+        if (message.deletedAt != 0L) return
+        // Queued/retried SMS must not bypass the shared encryption policy either.
+        val conversation = conversationRepository.getConversation(SpamThread.providerId(message.threadId))
+        val key = conversation?.encryptionKey?.takeIf { it.isNotBlank() } ?: prefs.globalEncryptionKey.get()
+        if (conversation?.encryptionEnabled ?: key.isNotBlank()) {
+            require(key.isNotBlank()) { "Encryption key is missing" }
+            val bytes = Base64.decode(key, Base64.DEFAULT)
+            if (!SecureMessages().isEncrypted(message.body, bytes)) {
+                val body = SecureMessages().encode(by.cyberpartisan.psms.Message(message.body), bytes)
+                context.contentResolver.update(message.getUri(), contentValuesOf(Sms.BODY to body), null, null)
+                if (io.realm.RealmObject.isManaged(message)) {
+                    Realm.getDefaultInstance().use { realm -> realm.executeTransaction { message.body = body } }
+                } else message.body = body
+            }
+        }
         val smsManager = message.subId.takeIf { it != -1 }
                 ?.let(SmsManagerFactory::createSmsManager)
                 ?: SmsManager.getDefault()
@@ -479,13 +507,13 @@ class MessageRepositoryImpl @Inject constructor(
 
         val sentIntents = parts.map {
             val intent = Intent(context, SmsSentReceiver::class.java).putExtra("id", message.id)
-            PendingIntent.getBroadcast(context, message.id.toInt(), intent, PendingIntent.FLAG_UPDATE_CURRENT)
+            PendingIntent.getBroadcast(context, message.id.toInt(), intent, PendingIntents.mutable(PendingIntent.FLAG_UPDATE_CURRENT))
         }
 
         val deliveredIntents = parts.map {
             val intent = Intent(context, SmsDeliveredReceiver::class.java).putExtra("id", message.id)
             val pendingIntent = PendingIntent
-                    .getBroadcast(context, message.id.toInt(), intent, PendingIntent.FLAG_UPDATE_CURRENT)
+                    .getBroadcast(context, message.id.toInt(), intent, PendingIntents.mutable(PendingIntent.FLAG_UPDATE_CURRENT))
             if (prefs.delivery.get()) pendingIntent else null
         }
 
@@ -504,6 +532,7 @@ class MessageRepositoryImpl @Inject constructor(
     }
 
     override fun resendMms(message: Message) {
+        if (message.deletedAt != 0L) return
         val subId = message.subId
         val threadId = message.threadId
         val pdu = tryOrNull {
@@ -529,14 +558,14 @@ class MessageRepositoryImpl @Inject constructor(
 
     private fun getIntentForDelayedSms(id: Long): PendingIntent {
         val intent = Intent(context, SendSmsReceiver::class.java).putExtra("id", id)
-        return PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_UPDATE_CURRENT)
+        return PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
     }
 
     private fun getIntentForMessageDeletion(threadId: Long, id: Long): PendingIntent {
         val intent = Intent(context, DeleteMessagesReceiver::class.java)
         intent.putExtra("threadId", threadId)
         intent.putExtra("messageIds", longArrayOf(id))
-        return PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntent.FLAG_UPDATE_CURRENT)
+        return PendingIntent.getBroadcast(context, id.toInt(), intent, PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
     }
 
     override fun insertSentSms(subId: Int, threadId: Long, address: String, body: String, date: Long): Message {
@@ -615,7 +644,7 @@ class MessageRepositoryImpl @Inject constructor(
         if (encryptionKey.isEmpty()) {
             return false
         }
-        return PSmsEncryptor().isEncrypted(message.getText(), Base64.decode(encryptionKey, Base64.DEFAULT))
+        return SecureMessages().isEncrypted(message.getText(), Base64.decode(encryptionKey, Base64.DEFAULT))
     }
 
     override fun insertReceivedSms(subId: Int, address: String, body: String, sentTime: Long): Message {
@@ -632,9 +661,10 @@ class MessageRepositoryImpl @Inject constructor(
             threadId = TelephonyCompat.getOrCreateThreadId(context, address)
             boxId = Sms.MESSAGE_TYPE_INBOX
             type = "sms"
-            threadId = SpamThread.classify(
-                threadId, true, body, prefs.spamFilter())
-            read = activeConversationManager.getActiveConversation() == threadId
+            threadId = prefs.classifySpam(threadId, true, body, address, type, contentId)
+            val active = activeConversationManager.getActiveConversation()
+            read = active == threadId || (threadId < 0 && active == SpamThread.providerId(threadId)
+                && prefs.showSpamInThread(threadId).get())
             seen = read
         }
         val realm = Realm.getDefaultInstance()
@@ -669,12 +699,12 @@ class MessageRepositoryImpl @Inject constructor(
     private fun checkReceivedMessage(message: Message) {
         val conversation = conversationRepository.getConversation(SpamThread.providerId(message.threadId))
         val isEncryptedByConversationKey = conversation != null && conversation.encryptionKey.isNotEmpty()
-                && PSmsEncryptor().isEncrypted(message.getText(), Base64.decode(conversation.encryptionKey, Base64.DEFAULT))
+                && SecureMessages().isEncrypted(message.getText(), Base64.decode(conversation.encryptionKey, Base64.DEFAULT))
 
         val messageText = if (conversation?.encryptionKey?.isNotEmpty() == true) {
-            PSmsEncryptor().tryDecode(message.getText(), Base64.decode(conversation.encryptionKey, Base64.DEFAULT)).text
+            SecureMessages().decodeIncoming(message.getText(), Base64.decode(conversation.encryptionKey, Base64.DEFAULT)).text
         } else if (prefs.globalEncryptionKey.get().isNotEmpty()) {
-            PSmsEncryptor().tryDecode(message.getText(), Base64.decode(prefs.globalEncryptionKey.get(), Base64.DEFAULT)).text
+            SecureMessages().decodeIncoming(message.getText(), Base64.decode(prefs.globalEncryptionKey.get(), Base64.DEFAULT)).text
         } else {
             message.getText()
         }
@@ -688,7 +718,7 @@ class MessageRepositoryImpl @Inject constructor(
             }
             deleteMessageWithDelay(message, deleteMessageAfterIdToMillis(minTimeoutId))
         } else if (prefs.globalEncryptionKey.get().isNotEmpty() && prefs.deleteEncryptedAfter.get() > 0
-                && PSmsEncryptor().isEncrypted(message.getText(), Base64.decode(prefs.globalEncryptionKey.get(), Base64.DEFAULT))) {
+                && SecureMessages().isEncrypted(message.getText(), Base64.decode(prefs.globalEncryptionKey.get(), Base64.DEFAULT))) {
             deleteMessageWithDelay(message, deleteMessageAfterIdToMillis(prefs.deleteEncryptedAfter.get()))
         }
     }
@@ -808,43 +838,46 @@ class MessageRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun deleteMessages(vararg messageIds: Long) {
-        Realm.getDefaultInstance().use { realm ->
-            realm.refresh()
-
-            val messages = realm.where(Message::class.java)
-                    .anyOf("id", messageIds)
-                    .findAll()
-
-            val uris = messages.map { it.getUri() }
-
-            realm.executeTransaction { messages.deleteAllFromRealm() }
-
-            uris.forEach { uri -> context.contentResolver.delete(uri, null, null) }
+    override fun deleteMessages(vararg messageIds: Long): List<Long> {
+        return MessageDeletion.delete(context, prefs, messageIds) { realm, affected ->
+            ConversationPartitions.update(realm, affected)
         }
     }
 
-    override fun getOldMessageCounts(maxAgeDays: Int): Map<Long, Int> {
+    override fun restoreMessages(vararg messageIds: Long): List<Long> {
+        val affected = MessageDeletion.restore(prefs, messageIds)
+        conversationRepository.updateConversations(*affected.toLongArray())
+        return affected
+    }
+
+    override fun permanentlyDeleteMessages(vararg messageIds: Long): List<Long> {
+        val affected = MessageDeletion.permanentlyDelete(context, messageIds, trashOnly = true)
+        conversationRepository.updateConversations(*affected.toLongArray())
+        return affected
+    }
+
+    override fun purgeExpiredTrash(): List<Long> {
+        val affected = MessageDeletion.purgeExpired(context, prefs)
+        conversationRepository.updateConversations(*affected.toLongArray())
+        return affected
+    }
+
+    override fun getOldMessageCounts(maxAgeDays: Int, spamOnly: Boolean): Map<Long, Int> {
         return Realm.getDefaultInstance().use { realm ->
-            realm.where(Message::class.java)
-                    .lessThan("date", now() - TimeUnit.DAYS.toMillis(maxAgeDays.toLong()))
-                    .findAll()
-                    .groupingBy { message -> message.threadId }
-                    .eachCount()
+            realm.where(Message::class.java).equalTo("deletedAt", 0L)
+                .lessThan("date", now() - TimeUnit.DAYS.toMillis(maxAgeDays.toLong()))
+                .let { if (spamOnly) it.lessThan("threadId", 0L) else it }
+                .findAll().groupingBy { it.threadId }.eachCount()
         }
     }
 
-    override fun deleteOldMessages(maxAgeDays: Int) {
-        return Realm.getDefaultInstance().use { realm ->
-            val messages = realm.where(Message::class.java)
-                    .lessThan("date", now() - TimeUnit.DAYS.toMillis(maxAgeDays.toLong()))
-                    .findAll()
-
-            val uris = messages.map { it.getUri() }
-
-            realm.executeTransaction { messages.deleteAllFromRealm() }
-
-            uris.forEach { uri -> context.contentResolver.delete(uri, null, null) }
+    override fun deleteOldMessages(maxAgeDays: Int, spamOnly: Boolean) {
+        val ids = Realm.getDefaultInstance().use { realm ->
+            realm.where(Message::class.java).equalTo("deletedAt", 0L)
+                .lessThan("date", now() - TimeUnit.DAYS.toMillis(maxAgeDays.toLong()))
+                .let { if (spamOnly) it.lessThan("threadId", 0L) else it }
+                .findAll().map { it.id }.toLongArray()
         }
+        deleteMessages(*ids)
     }
 }

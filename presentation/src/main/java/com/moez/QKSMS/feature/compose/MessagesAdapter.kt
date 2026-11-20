@@ -32,7 +32,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.ProgressBar
 import androidx.recyclerview.widget.RecyclerView
-import by.cyberpartisan.psms.PSmsEncryptor
+import com.moez.QKSMS.util.SecureMessages
 import by.cyberpartisan.psms.Message as PSmsMessage
 import com.jakewharton.rxbinding2.view.clicks
 import com.moez.QKSMS.R
@@ -262,7 +262,7 @@ class MessagesAdapter @Inject constructor(
         val isEncrypted = if (conversation != null) {
             if (!encryptionKey.isNullOrEmpty()) {
                 try {
-                    PSmsEncryptor().isEncrypted(message.body, Base64.decode(encryptionKey, Base64.DEFAULT))
+                    SecureMessages().isEncrypted(message.body, Base64.decode(encryptionKey, Base64.DEFAULT))
                 } catch (_: InvalidVersionException) {
                     false
                 }
@@ -309,7 +309,7 @@ class MessagesAdapter @Inject constructor(
 
         val decryptedMessage = if (!encryptionKey.isNullOrEmpty()) {
             try {
-                PSmsEncryptor().tryDecode(messageText.toString(), Base64.decode(encryptionKey, Base64.DEFAULT))
+                SecureMessages().tryDecode(messageText.toString(), Base64.decode(encryptionKey, Base64.DEFAULT), (message.date) < prefs.secureProtocolSince.get())
             } catch (_: InvalidVersionException) {
                 PSmsMessage(messageText.toString())
             }
@@ -367,7 +367,10 @@ class MessagesAdapter @Inject constructor(
             else -> dateFormatter.getTimestamp(message.date)
         }
 
+        val spamInInbox = message.threadId < 0 && (conversation?.id ?: 0L) > 0
+        if (spamInInbox) holder.status.text = context.getString(R.string.spam_message_status, holder.status.text)
         holder.status.setVisible(when {
+            spamInInbox -> true
             expanded[message.id] == true -> true
             message.isSending() -> true
             message.isFailedMessage() -> true

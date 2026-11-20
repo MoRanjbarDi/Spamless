@@ -19,6 +19,8 @@
 
 package com.moez.QKSMS.feature.widget
 
+import com.klinker.android.send_message.PendingIntents
+
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -140,17 +142,17 @@ class WidgetProvider : AppWidgetProvider() {
 
         // Main intent
         val mainIntent = Intent(context, MainActivity::class.java)
-        val mainPI = PendingIntent.getActivity(context, 0, mainIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val mainPI = PendingIntent.getActivity(context, 0, mainIntent, PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
         remoteViews.setOnClickPendingIntent(R.id.title, mainPI)
 
         // Compose intent
         val composeIntent = Intent(context, ComposeActivity::class.java)
-        val composePI = PendingIntent.getActivity(context, 0, composeIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val composePI = PendingIntent.getActivity(context, 0, composeIntent, PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
         remoteViews.setOnClickPendingIntent(R.id.compose, composePI)
 
         // Conversation intent
         val startActivityIntent = Intent(context, MainActivity::class.java)
-        val startActivityPendingIntent = PendingIntent.getActivity(context, 0, startActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val startActivityPendingIntent = PendingIntent.getActivity(context, 0, startActivityIntent, PendingIntents.mutable(PendingIntent.FLAG_UPDATE_CURRENT))
         remoteViews.setPendingIntentTemplate(R.id.conversations, startActivityPendingIntent)
 
         AppWidgetManager.getInstance(context).updateAppWidget(appWidgetId, remoteViews)

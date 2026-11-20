@@ -18,6 +18,8 @@
  */
 package com.moez.QKSMS.util
 
+import com.klinker.android.send_message.PendingIntents
+
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
@@ -99,11 +101,11 @@ class NightModeManager @Inject constructor(
     private fun updateAlarms() {
         val dayCalendar = createCalendar(prefs.nightEnd.get())
         val day = Intent(context, NightModeReceiver::class.java)
-        val dayIntent = PendingIntent.getBroadcast(context, 0, day, 0)
+        val dayIntent = PendingIntent.getBroadcast(context, 0, day, PendingIntents.immutable(0))
 
         val nightCalendar = createCalendar(prefs.nightStart.get())
         val night = Intent(context, NightModeReceiver::class.java)
-        val nightIntent = PendingIntent.getBroadcast(context, 1, night, 0)
+        val nightIntent = PendingIntent.getBroadcast(context, 1, night, PendingIntents.immutable(0))
 
         context.sendBroadcast(day)
         context.sendBroadcast(night)

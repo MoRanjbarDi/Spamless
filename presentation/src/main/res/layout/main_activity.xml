@@ -65,31 +65,47 @@
 
         </androidx.appcompat.widget.Toolbar>
 
-        <com.moez.QKSMS.common.widget.QkTextView
-            android:id="@+id/empty"
-            style="@style/TextSecondary"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:padding="56dp"
-            app:layout_constraintBottom_toTopOf="@id/bottom"
-            app:layout_constraintTop_toBottomOf="@id/toolbar"
-            tools:text="Your conversations will appear here"
-            tools:visibility="invisible" />
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/inboxTabs"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:tabMode="fixed"
+            app:tabTextAppearance="@style/InboxTabText"
+            app:tabGravity="fill"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/toolbar">
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/inbox_tab_all" />
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/inbox_tab_contacts" />
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/inbox_tab_non_contacts" />
+        </com.google.android.material.tabs.TabLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerView"
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/inboxRefresh"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             app:layout_constraintBottom_toTopOf="@id/bottom"
-            app:layout_constraintTop_toBottomOf="@id/toolbar"
-            tools:listitem="@layout/conversation_list_item" />
+            app:layout_constraintTop_toBottomOf="@id/inboxTabs">
+            <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent">
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerView"
+                    android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:clipChildren="false" android:clipToPadding="false"
+                    android:paddingTop="8dp" android:paddingBottom="8dp"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                    tools:listitem="@layout/conversation_list_item" />
+                <com.moez.QKSMS.common.widget.QkTextView
+                    android:id="@+id/empty" style="@style/TextSecondary"
+                    android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:gravity="center" android:padding="56dp" />
+            </FrameLayout>
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
         <ImageView
             android:id="@+id/compose"
@@ -112,7 +128,7 @@
             android:background="@drawable/ab_shadow"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/toolbar" />
+            app:layout_constraintTop_toBottomOf="@id/inboxTabs" />
 
         <View
             android:id="@+id/bottom"

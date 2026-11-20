@@ -124,8 +124,9 @@ public class RateController {
         }
         sMutexLock = true;
 
-        mContext.registerReceiver(mBroadcastReceiver,
-                new IntentFilter(RATE_LIMIT_CONFIRMED_ACTION));
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            mContext.registerReceiver(mBroadcastReceiver, new IntentFilter(RATE_LIMIT_CONFIRMED_ACTION), Context.RECEIVER_NOT_EXPORTED);
+        } else mContext.registerReceiver(mBroadcastReceiver, new IntentFilter(RATE_LIMIT_CONFIRMED_ACTION));
 
         mAnswer = NO_ANSWER;
         try {

@@ -1,4 +1,3 @@
-
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="title_spam">هرزنامه</string>
@@ -16,4 +15,21 @@
         <item>صدای بیپ</item>
         <item>صدای اعلان پیامک سیستم</item>
     </string-array>
+    <string name="inbox_tab_contacts">مخاطبان</string>
+    <string name="inbox_tab_non_contacts">غیرمخاطبان</string>
+    <string name="search_messages_hint">جست‌وجوی پیام‌ها</string>
+    <string name="spam_search_hint">جست‌وجوی هرزنامه‌ها</string>
+    <string name="menu_select_all">انتخاب همه</string>
+    <string name="thread_show_spam">نمایش پیام‌های هرزنامه</string>
+    <string name="spam_notifications">اعلان‌های هرزنامه</string>
+    <string-array name="spam_notification_modes">
+        <item>خاموش</item>
+        <item>حذف خودکار پس از ۱۰ ثانیه</item>
+        <item>روشن</item>
+    </string-array>
+    <string name="spam_message_status">هرزنامه · %1$s</string>
+    <string name="inbox_tab_all">همه</string>
+    <string name="spam_auto_delete">حذف خودکار پیام‌های هرزنامه</string>
+    <string name="spam_auto_delete_dialog_message">هرزنامه‌های قدیمی‌تر از تعداد روزهای انتخاب‌شده به‌طور خودکار حذف می‌شوند. سایر پیام‌ها حفظ می‌شوند. برای غیرفعال کردن، «هرگز» را انتخاب کنید.</string>
+    <string name="backup_choose_file">انتخاب فایل دیگر</string>
 </resources>

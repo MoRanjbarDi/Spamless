@@ -29,7 +29,7 @@ import androidx.core.text.color
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import by.cyberpartisan.psms.InvalidVersionException
-import by.cyberpartisan.psms.PSmsEncryptor
+import com.moez.QKSMS.util.SecureMessages
 import by.cyberpartisan.psms.Message as PSmsMessage
 import com.moez.QKSMS.R
 import com.moez.QKSMS.common.Navigator
@@ -124,9 +124,9 @@ class ConversationsAdapter @Inject constructor(
 
         val snippetMessage = try {
             if (conversation.encryptionKey.isNotEmpty()) {
-                PSmsEncryptor().tryDecode(conversation.snippet.toString(), Base64.decode(conversation.encryptionKey, Base64.DEFAULT))
+                SecureMessages().tryDecode(conversation.snippet.toString(), Base64.decode(conversation.encryptionKey, Base64.DEFAULT), (conversation.lastMessage?.date ?: Long.MAX_VALUE) < prefs.secureProtocolSince.get())
             } else if (prefs.globalEncryptionKey.get().isNotEmpty()) {
-                PSmsEncryptor().tryDecode(conversation.snippet.toString(), Base64.decode(prefs.globalEncryptionKey.get(), Base64.DEFAULT))
+                SecureMessages().tryDecode(conversation.snippet.toString(), Base64.decode(prefs.globalEncryptionKey.get(), Base64.DEFAULT), (conversation.lastMessage?.date ?: Long.MAX_VALUE) < prefs.secureProtocolSince.get())
             } else {
                 PSmsMessage(conversation.snippet ?: "")
             }

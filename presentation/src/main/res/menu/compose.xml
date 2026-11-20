@@ -50,7 +50,7 @@
 
     <item
         android:id="@+id/info"
-        android:icon="@drawable/ic_more_vert_black_24dp"
+        android:icon="@drawable/ic_info_black_24dp"
         android:title="@string/menu_info"
         android:visible="false"
         app:showAsAction="always" />
@@ -104,4 +104,8 @@
         android:visible="false"
         app:showAsAction="always" />
 
+    <item android:id="@+id/show_spam_messages"
+        android:title="@string/thread_show_spam" android:checkable="true"
+        android:checked="false" android:visible="false" app:showAsAction="never" />
+<item android:id="@+id/not_spam_message" android:title="@string/spam_mark_not_spam" android:visible="false" app:showAsAction="never" />
 </menu>

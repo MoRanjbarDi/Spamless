@@ -16,6 +16,8 @@
 
 package com.android.mms.transaction;
 
+import com.klinker.android.send_message.PendingIntents;
+
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.ContentResolver;
@@ -309,7 +311,7 @@ public class RetryScheduler implements Observer {
                     Intent service = new Intent(TransactionService.ACTION_ONALARM,
                                         null, context, TransactionService.class);
                     PendingIntent operation = PendingIntent.getService(
-                            context, 0, service, PendingIntent.FLAG_ONE_SHOT);
+                            context, 0, service, PendingIntents.immutable(PendingIntent.FLAG_ONE_SHOT));
                     AlarmManager am = (AlarmManager) context.getSystemService(
                             Context.ALARM_SERVICE);
                     am.set(AlarmManager.RTC, retryAt, operation);

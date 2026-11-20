@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Do not send build-machine analytics from the legacy Realm plugin.
+export REALM_DISABLE_ANALYTICS=true
+
 ##############################################################################
 ##
 ##  Gradle start up script for UN*X

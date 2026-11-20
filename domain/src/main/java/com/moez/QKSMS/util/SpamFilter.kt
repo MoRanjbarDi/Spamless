@@ -12,8 +12,8 @@ class SpamFilter(iranAds: Boolean, customRegex: String) {
         iran?.matcher(body)?.find() == true || custom?.matcher(body)?.find() == true
 
     companion object {
-        // Exact rule from the supplied Tasker profile. DOTALL also handles multiline SMS.
-        const val IRAN_REGEX = ".*لغو[:\\s]*(11|۱۱).*"
+        // Tasker opt-out rule, including Latin, Persian and Arabic-Indic digits.
+        const val IRAN_REGEX = ".*لغو[:\\s]*(11|۱۱|١١).*"
         private val IRAN_PATTERN = Pattern.compile(IRAN_REGEX, Pattern.DOTALL)
 
         fun validationError(regex: String): String? = try {

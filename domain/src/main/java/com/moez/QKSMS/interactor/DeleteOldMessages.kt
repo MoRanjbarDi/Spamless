@@ -28,17 +28,26 @@ import javax.inject.Inject
 class DeleteOldMessages @Inject constructor(
     private val conversationRepo: ConversationRepository,
     private val messageRepo: MessageRepository,
-    private val prefs: Preferences
+    private val prefs: Preferences,
+    private val notificationManager: com.moez.QKSMS.manager.NotificationManager,
+    private val updateBadge: UpdateBadge,
+    private val permissions: com.moez.QKSMS.manager.PermissionManager
 ) : Interactor<Unit>() {
 
     override fun buildObservable(params: Unit): Flowable<*> = Flowable.fromCallable {
-        val maxAge = prefs.autoDelete.get().takeIf { it > 0 } ?: return@fromCallable
-        val counts = messageRepo.getOldMessageCounts(maxAge)
-        val threadIds = counts.keys.toLongArray()
-
-        Timber.d("Deleting ${counts.values.sum()} old messages from ${threadIds.size} conversations")
-        messageRepo.deleteOldMessages(maxAge)
-        conversationRepo.updateConversations(*threadIds)
+        if (!permissions.isDefaultSms() || !permissions.hasReadSms()) return@fromCallable
+        val affected = messageRepo.purgeExpiredTrash().toMutableSet()
+        listOf(prefs.autoDelete.get() to false, prefs.spamAutoDelete.get() to true)
+            .filter { it.first > 0 }.forEach { (days, spamOnly) ->
+                val counts = messageRepo.getOldMessageCounts(days, spamOnly)
+                affected.addAll(counts.keys)
+                messageRepo.deleteOldMessages(days, spamOnly)
+            }
+        if (affected.isNotEmpty()) {
+            conversationRepo.updateConversations(*affected.toLongArray())
+            affected.forEach { notificationManager.update(it) }
+            updateBadge.execute(Unit)
+        }
     }
 
 }

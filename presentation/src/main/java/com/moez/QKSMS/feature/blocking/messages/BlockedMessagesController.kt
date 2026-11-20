@@ -48,6 +48,7 @@ class BlockedMessagesController : QkController<BlockedMessagesView, BlockedMessa
     @Inject lateinit var blockedMessagesAdapter: BlockedMessagesAdapter
     @Inject lateinit var blockingDialog: BlockingDialog
     @Inject lateinit var colors: Colors
+    @Inject lateinit var prefs: com.moez.QKSMS.util.Preferences
     @Inject lateinit var context: Context
     @Inject override lateinit var presenter: BlockedMessagesPresenter
 
@@ -108,9 +109,9 @@ class BlockedMessagesController : QkController<BlockedMessagesView, BlockedMessa
     override fun showDeleteDialog(conversations: List<Long>) {
         val count = conversations.size
         AlertDialog.Builder(activity)
-                .setTitle(R.string.dialog_delete_title)
-                .setMessage(resources?.getQuantityString(R.plurals.dialog_delete_message, count, count))
-                .setPositiveButton(R.string.button_delete) { _, _ -> confirmDeleteIntent.onNext(conversations) }
+                .setTitle(com.moez.QKSMS.common.util.DeletionUi.title(prefs))
+                .setMessage(com.moez.QKSMS.common.util.DeletionUi.conversations(context, prefs, count))
+                .setPositiveButton(com.moez.QKSMS.common.util.DeletionUi.button(prefs)) { _, _ -> confirmDeleteIntent.onNext(conversations) }
                 .setNegativeButton(R.string.button_cancel, null)
                 .show()
     }

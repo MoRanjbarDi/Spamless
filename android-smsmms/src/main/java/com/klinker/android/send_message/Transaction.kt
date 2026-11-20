@@ -16,6 +16,8 @@
 
 package com.klinker.android.send_message
 
+import com.klinker.android.send_message.PendingIntents
+
 import android.app.PendingIntent
 import android.content.ContentResolver
 import android.content.Context
@@ -101,7 +103,7 @@ class Transaction @JvmOverloads constructor(private val context: Context, settin
 
             sentIntent.putExtra(EXTRA_CONTENT_URI, messageUri.toString())
             sentIntent.putExtra(EXTRA_FILE_PATH, sendFile.path)
-            val sentPI = PendingIntent.getBroadcast(context, 0, sentIntent, PendingIntent.FLAG_CANCEL_CURRENT)
+            val sentPI = PendingIntent.getBroadcast(context, 0, sentIntent, PendingIntents.mutable(PendingIntent.FLAG_CANCEL_CURRENT))
 
             val updatedIntent = Intent(MMS_UPDATED).putExtra("uri", messageUri.toString())
             BroadcastUtils.addClassName(context, updatedIntent, MMS_UPDATED)

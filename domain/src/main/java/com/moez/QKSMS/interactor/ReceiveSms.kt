@@ -91,7 +91,7 @@ class ReceiveSms @Inject constructor(
                     if (conversation.archived) conversationRepo.markUnarchived(conversation.id)
                 }
                 .map { conversation -> conversation.id } // Map to the id because [delay] will put us on the wrong thread
-                .doOnNext { threadId -> notificationManager.update(threadId) } // Update the notification
+                .doOnNext { threadId -> notificationManager.update(threadId, alert = true) } // Update the notification
                 .doOnNext { shortcutManager.updateShortcuts() } // Update shortcuts
                 .flatMap { updateBadge.buildObservable(Unit) } // Update the badge and widget
     }

@@ -48,7 +48,10 @@ class ReceiveMms @Inject constructor(
                 .doOnNext { message ->
                     // TODO: Ideally this is done when we're saving the MMS to ContentResolver
                     // This change can be made once we move the MMS storing code to the Data module
-                    if (activeConversationManager.getActiveConversation() == message.threadId) {
+                    val active = activeConversationManager.getActiveConversation()
+                    if (active == message.threadId || (message.threadId < 0 &&
+                        active == com.moez.QKSMS.util.SpamThread.providerId(message.threadId) &&
+                        prefs.showSpamInThread(message.threadId).get())) {
                         messageRepo.markRead(message.threadId)
                     }
                 }
@@ -89,7 +92,7 @@ class ReceiveMms @Inject constructor(
                     if (conversation.archived) conversationRepo.markUnarchived(conversation.id)
                 }
                 .map { conversation -> conversation.id } // Map to the id because [delay] will put us on the wrong thread
-                .doOnNext(notificationManager::update) // Update the notification
+                .doOnNext { notificationManager.update(it, alert = true) } // Update the notification
                 .flatMap { updateBadge.buildObservable(Unit) } // Update the badge
     }
 

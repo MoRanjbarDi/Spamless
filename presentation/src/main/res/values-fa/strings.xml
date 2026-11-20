@@ -1,4 +1,3 @@
-
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Copyright (C) 2019 Moez Bhatti <moez.bhatti@gmail.com>
@@ -20,7 +19,7 @@
   -->
 <resources>
 
-    <string name="app_name" translatable="false">P-SMS</string>
+    <string name="app_name" translatable="false">Spamless</string>
 
     <string name="shortcut_compose_long_label">گفت‌وگوی جدید</string>
     <string name="shortcut_compose_short_label">نوشتن پیام</string>
@@ -32,7 +31,7 @@
     <string name="title_theme">پوسته</string>
     <string name="title_conversations">جست‌وجو در صندوق ورودی…</string>
     <string name="title_compose">نام یا شماره تلفن را وارد کنید</string>
-    <string name="title_qksms_plus" translatable="false">P-SMS</string>
+    <string name="title_qksms_plus" translatable="false">Spamless</string>
 
     <string name="setup_skip">رد کردن</string>
     <string name="setup_next">ادامه</string>
@@ -65,11 +64,11 @@
     <string name="archived_empty_text">گفت‌وگوهای بایگانی‌شده شما در اینجا نمایش داده می‌شوند</string>
     <string name="main_fab_cd">شروع گفت‌وگوی جدید</string>
     <string name="main_default_sms_title">دوباره از پیامک لذت ببرید</string>
-    <string name="main_default_sms_message">P-SMS را به‌عنوان برنامه پیش‌فرض پیامک انتخاب کنید</string>
+    <string name="main_default_sms_message">Spamless را به‌عنوان برنامه پیش‌فرض پیامک انتخاب کنید</string>
     <string name="main_default_sms_change">تغییر</string>
     <string name="main_permission_required">دسترسی لازم است</string>
-    <string name="main_permission_sms">P-SMS برای مشاهده و ارسال پیامک به دسترسی مربوطه نیاز دارد</string>
-    <string name="main_permission_contacts">P-SMS برای مشاهده مخاطبین شما به دسترسی مربوطه نیاز دارد</string>
+    <string name="main_permission_sms">Spamless برای مشاهده و ارسال پیامک به دسترسی مربوطه نیاز دارد</string>
+    <string name="main_permission_contacts">Spamless برای مشاهده مخاطبین شما به دسترسی مربوطه نیاز دارد</string>
     <string name="main_permission_allow">اجازه دادن</string>
 
     <string name="drawer_inbox">صندوق ورودی</string>
@@ -81,10 +80,10 @@
     <string name="drawer_plus">حمایت مالی</string>
     <string name="drawer_help">راهنما و بازخورد</string>
     <string name="drawer_invite">دعوت از دوستان</string>
-    <string name="drawer_plus_banner_title" translatable="false">P-SMS</string>
+    <string name="drawer_plus_banner_title" translatable="false">Spamless</string>
     <string name="drawer_plus_banner_summary">با فعال‌کردن قابلیت‌های بیشتر، از توسعه برنامه نیز حمایت کنید</string>
 
-    <string name="rate_title">از QKSMS راضی هستید؟</string>
+    <string name="rate_title">از Spamless راضی هستید؟</string>
     <string name="rate_summary">با ثبت امتیاز خود در گوگل‌پلی، از ما حمایت کنید!</string>
     <string name="rate_okay">حتماً!</string>
     <string name="rate_dismiss">فعلاً نه</string>
@@ -113,7 +112,7 @@
     <string name="compose_vcard_label">کارت مخاطب</string>
     <string name="compose_scheduled_for">زمان ارسال</string>
     <string name="compose_scheduled_future">زمان انتخاب‌شده باید در آینده باشد!</string>
-    <string name="compose_scheduled_plus">برای استفاده از قابلیت زمان‌بندی پیام‌ها، باید QKSMS+ را فعال کنید</string>
+    <string name="compose_scheduled_plus">برای استفاده از قابلیت زمان‌بندی پیام‌ها، باید Spamless را فعال کنید</string>
     <string name="compose_scheduled_toast">پیام به فهرست پیام‌های زمان‌بندی‌شده اضافه شد</string>
     <string name="compose_hint">نوشتن پیام…</string>
     <string name="compose_menu_copy">کپی متن</string>
@@ -172,7 +171,7 @@
     <string name="backup_never">هرگز</string>
     <string name="backup_restore_title">بازیابی</string>
     <string name="backup_restore_summary">یک نسخه پشتیبان انتخاب کنید</string>
-    <string name="backup_restore_error_plus">برای استفاده از قابلیت پشتیبان‌گیری و بازیابی، لطفاً QKSMS+ را فعال کنید</string>
+    <string name="backup_restore_error_plus">برای استفاده از قابلیت پشتیبان‌گیری و بازیابی، لطفاً Spamless را فعال کنید</string>
     <string name="backup_restore_error_backup">عملیات پشتیبان‌گیری در حال انجام است…</string>
     <string name="backup_restore_error_restore">عملیات بازیابی در حال انجام است…</string>
     <string name="backup_restore_confirm_title">بازیابی از نسخه پشتیبان</string>
@@ -180,7 +179,7 @@
     <string name="backup_restore_stop_title">توقف بازیابی</string>
     <string name="backup_restore_stop_message">پیام‌هایی که تاکنون بازیابی شده‌اند، همچنان در دستگاه شما باقی خواهند ماند</string>
     <string name="backup_restore_dialog_title">نسخه‌های پشتیبان</string>
-    <string name="backup_restore_dialog_summary" translatable="false">/QKSMS/Backups</string>
+    <string name="backup_restore_dialog_summary" translatable="false">/Spamless/Backups</string>
     <string name="backup_restore_dialog_empty">هیچ نسخه پشتیبانی پیدا نشد</string>
     <plurals name="backup_message_count">
         <item quantity="zero">بدون پیام</item>
@@ -278,8 +277,8 @@
     <string name="settings_mms_size_title">فشرده‌سازی خودکار پیوست‌های MMS</string>
     <string name="settings_sync_title">همگام‌سازی پیام‌ها</string>
     <string name="settings_sync_summary">همگام‌سازی مجدد پیام‌ها با پایگاه داده پیامک اندروید</string>
-    <string name="settings_about_title">درباره P-SMS</string>
-    <string name="settings_version">نسخه %1$s\nنسخه QKSMS: %2$s\nنسخه P-SMS-lib: %3$s</string>
+    <string name="settings_about_title">درباره Spamless</string>
+    <string name="settings_version">نسخه %1$s</string>
     <string name="settings_logging_enabled">ثبت گزارش‌های اشکال‌زدایی فعال است</string>
     <string name="settings_logging_disabled">ثبت گزارش‌های اشکال‌زدایی غیرفعال است</string>
 
@@ -291,8 +290,8 @@
     <string name="blocking_conversations">گفت‌وگوهای مسدودشده</string>
 
     <string name="blocking_manager_title">مدیریت مسدودسازی</string>
-    <string name="blocking_manager_qksms_title">P-SMS</string>
-    <string name="blocking_manager_qksms_summary">قابلیت مسدودسازی داخلی P-SMS</string>
+    <string name="blocking_manager_qksms_title">Spamless</string>
+    <string name="blocking_manager_qksms_summary">قابلیت مسدودسازی داخلی Spamless</string>
     <string name="blocking_manager_call_blocker_title" translatable="false">Call Blocker - Incoming/Outgoing</string>
     <string name="blocking_manager_call_blocker_summary">مسدودسازی پیام‌های تبلیغاتی، شماره‌ها و تماس‌های ناشناس با استفاده از فهرست سیاه و زمان‌بندی</string>
     <string name="blocking_manager_call_control_title" translatable="false">Call Control</string>
@@ -341,10 +340,10 @@
     <string name="qksms_plus_upgrade_d" translatable="false">One-time purchase of %1$s %2$s</string>
     <!-- Substitutions are for price and currency. Ex: Unlock + donate for $4.99 USD -->
     <string name="qksms_plus_upgrade_donate">فعال‌سازی قابلیت‌ها و حمایت مالی با پرداخت %1$s %2$s</string>
-    <string name="qksms_plus_thanks_title">از حمایت شما از QKSMS سپاسگزاریم!</string>
-    <string name="qksms_plus_thanks_summary">اکنون به تمام قابلیت‌های QKSMS+ دسترسی دارید</string>
+    <string name="qksms_plus_thanks_title">از حمایت شما از Spamless سپاسگزاریم!</string>
+    <string name="qksms_plus_thanks_summary">اکنون به تمام قابلیت‌های Spamless دسترسی دارید</string>
     <string name="qksms_plus_error">خطایی رخ داد. لطفاً دوباره تلاش کنید</string>
-    <string name="qksms_plus_free_title">P-SMS یک برنامه رایگان است! اگر مایلید از ادامه توسعه آن حمایت کنید، از کمک مالی شما صمیمانه سپاسگزار خواهیم بود.</string>
+    <string name="qksms_plus_free_title">Spamless یک برنامه رایگان است! اگر مایلید از ادامه توسعه آن حمایت کنید، از کمک مالی شما صمیمانه سپاسگزار خواهیم بود.</string>
     <string name="qksms_plus_donate">حمایت مالی</string>
     <string name="qksms_plus_coming_soon">به‌زودی</string>
     <string name="qksms_plus_themes_title">پوسته‌های ویژه</string>
@@ -366,7 +365,7 @@
     <string name="qksms_plus_respond_title">پاسخ خودکار</string>
     <string name="qksms_plus_respond_summary">ارسال خودکار پاسخ‌های از پیش تعیین‌شده به پیام‌های دریافتی</string>
     <string name="qksms_plus_more_title">سایر قابلیت‌ها</string>
-    <string name="qksms_plus_more_summary">توسعه QKSMS همچنان ادامه دارد و خرید شما شامل تمام قابلیت‌های آینده QKSMS+ نیز خواهد بود!</string>
+    <string name="qksms_plus_more_summary">توسعه Spamless همچنان ادامه دارد و خرید شما شامل تمام قابلیت‌های آینده Spamless نیز خواهد بود!</string>
 
     <string name="widget_loading">در حال بارگذاری…</string>
     <string name="widget_more">نمایش گفت‌وگوهای بیشتر</string>
@@ -379,16 +378,16 @@
     <string name="qkreply_menu_view">باز کردن گفت‌وگو</string>
 
     <string name="theme_material">متریال</string>
-    <string name="theme_plus" translatable="false">QKSMS+</string>
+    <string name="theme_plus" translatable="false">Spamless</string>
     <string name="theme_hex">HEX</string>
     <string name="theme_apply">اعمال</string>
 
-    <string name="about_developer" translatable="false">Cpartisans, Moez Bhatti</string>
-    <string name="about_source" translatable="false">https://github.com/wrwrabbit/Partisan-SMS, based on https://github.com/moezbhatti/qksms</string>
-    <string name="about_changelog" translatable="false">https://github.com/wrwrabbit/Partisan-SMS/releases</string>
-    <string name="about_contact" translatable="false">https://t.me/cpartisans</string>
+    <string name="about_developer" translatable="false">Moranjbardi, Cpartisans, Moez Bhatti</string>
+    <string name="about_source" translatable="false">https://github.com/MoRanjbarDi/Spamless based on https://github.com/wrwrabbit/Partisan-SMS and based on https://github.com/moezbhatti/qksms</string>
+    <string name="about_changelog" translatable="false">https://github.com/MoRanjbarDi/Spamless/releases</string>
+    <string name="about_contact" translatable="false">https://moranjbardi.github.io/</string>
     <string name="about_license" translatable="false">GNU General Public License v3.0</string>
-    <string name="about_copyright" translatable="false">© 2014–2019</string>
+    <string name="about_copyright" translatable="false">© 2014–2026</string>
 
     <string name="changelog_title" translatable="false">New in QKSMS</string>
     <string name="changelog_version" translatable="false">Version %s</string>
@@ -421,7 +420,7 @@
 
     <string name="toast_copied">کپی شد</string>
     <string name="toast_archived">گفت‌وگو بایگانی شد</string>
-    <string name="toast_qksms_plus">برای استفاده از این قابلیت، باید QKSMS+ را فعال کنید</string>
+    <string name="toast_qksms_plus">برای استفاده از این قابلیت، باید Spamless را فعال کنید</string>
 
     <plurals name="notification_new_messages">
         <item quantity="one">پیام جدید</item>
@@ -494,7 +493,7 @@
         <item>اشکالی نداره</item>
     </string-array>
 
-    <string name="settings_category_hidden">تنظیمات Partisan</string>
+    <string name="settings_category_hidden">تنظیمات رمزنگاری</string>
     <string name="conversation_encryption_key_title">کلید رمزگذاری</string>
     <string name="settings_delete_encrypted_after_title">حذف پیام‌های رمزگذاری‌شده پس از</string>
     <string name="settings_delete_encrypted_after_default">حذف نشوند</string>

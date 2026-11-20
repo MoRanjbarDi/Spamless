@@ -40,6 +40,10 @@ class ComposeActivityModule {
     fun provideQuery(activity: ComposeActivity): String = activity.intent.extras?.getString("query") ?: ""
 
     @Provides
+    @Named("messageId")
+    fun provideMessageId(activity: ComposeActivity): Long = activity.intent.getLongExtra("messageId", -1)
+
+    @Provides
     @Named("threadId")
     fun provideThreadId(activity: ComposeActivity): Long = activity.intent.extras?.getLong("threadId") ?: 0L
 

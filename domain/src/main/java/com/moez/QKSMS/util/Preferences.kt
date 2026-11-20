@@ -90,6 +90,47 @@ class Preferences @Inject constructor(
 
     val iranAdsSpam = rxPrefs.getBoolean("iranAdsSpam", true)
     val customSpamRegex = rxPrefs.getString("customSpamRegex", "")
+    // 0: off, 1: dismiss after 10 seconds, 2: on.
+    val spamNotifications = rxPrefs.getInteger("spamNotifications", 0)
+    fun showSpamInThread(threadId: Long) = rxPrefs.getBoolean("showSpamInThread_${SpamThread.providerId(threadId)}", false)
+    val secureProtocolSince = rxPrefs.getLong("secureProtocolSince", 0L)
+    init { if (secureProtocolSince.get() == 0L) secureProtocolSince.set(System.currentTimeMillis()) }
+    val spamVibration = rxPrefs.getBoolean("spamVibration", true)
+    private fun senderKey(address: String): String = if (address.any { it.isLetter() })
+        "id:" + address.trim().lowercase(Locale.ROOT) else
+        "tel:" + android.telephony.PhoneNumberUtils.normalizeNumber(address)
+    @Synchronized fun trustSpamSenders(addresses: Collection<String>) {
+        val values = sharedPrefs.getStringSet("trustedSpamSenders", emptySet())!!.toMutableSet()
+        values.addAll(addresses.filter { it.isNotBlank() }.map(::senderKey))
+        check(sharedPrefs.edit().putStringSet("trustedSpamSenders", values).commit())
+    }
+    fun isTrustedSpamSender(address: String): Boolean =
+        sharedPrefs.getStringSet("trustedSpamSenders", emptySet())!!.contains(senderKey(address))
+    fun spamSenderMatcher(): (String) -> Boolean {
+        val trusted = sharedPrefs.getStringSet("trustedSpamSenders", emptySet())!!.toSet()
+        val cache = mutableMapOf<String, Boolean>()
+        return { address -> cache.getOrPut(address) { senderKey(address) in trusted } }
+    }
+    private fun exceptionKey(type: String, id: Long, body: String): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256").digest(body.toByteArray(Charsets.UTF_8))
+        val hex = "0123456789abcdef"
+        return "$type:$id:" + buildString(64) {
+            digest.forEach { append(hex[(it.toInt() and 255) ushr 4]); append(hex[it.toInt() and 15]) }
+        }
+    }
+    @Synchronized fun allowSpamMessages(messages: List<com.moez.QKSMS.model.Message>) {
+        val values = sharedPrefs.getStringSet("allowedSpamMessages", emptySet())!!.toMutableSet()
+        messages.forEach { values.add(exceptionKey(it.type, it.contentId, it.body)) }
+        check(sharedPrefs.edit().putStringSet("allowedSpamMessages", values).commit())
+    }
+    fun classifySpam(thread: Long, incoming: Boolean, body: String, address: String, type: String, id: Long): Long {
+        if (!incoming || isTrustedSpamSender(address) || !spamFilter().matches(body)) return SpamThread.providerId(thread)
+        val exceptions = sharedPrefs.getStringSet("allowedSpamMessages", emptySet())!!
+        return if (exceptions.isNotEmpty() && exceptions.contains(exceptionKey(type, id, body)))
+            SpamThread.providerId(thread) else SpamThread.spamId(thread)
+    }
+    val spamClassificationSignature = rxPrefs.getString("spamClassificationSignature", "")
+    fun currentSpamClassificationSignature(): String = "v3:${SpamFilter.IRAN_REGEX}:${iranAdsSpam.get()}:${customSpamRegex.get()}"
     val spamArrivalSound = rxPrefs.getInteger("spamArrivalSound", 1) // silent, beep, system
 
     private var spamFilterKey: Pair<Boolean, String>? = null
@@ -136,16 +177,20 @@ class Preferences @Inject constructor(
     val swipeRight = rxPrefs.getInteger("swipeRight", SWIPE_ACTION_ARCHIVE)
     val swipeLeft = rxPrefs.getInteger("swipeLeft", SWIPE_ACTION_ARCHIVE)
     val autoEmoji = rxPrefs.getBoolean("autoEmoji", true)
-    val delivery = rxPrefs.getBoolean("delivery", false)
+    val delivery = rxPrefs.getBoolean("delivery", true)
     val signature = rxPrefs.getString("signature", "")
     val unicode = rxPrefs.getBoolean("unicode", false)
     val mobileOnly = rxPrefs.getBoolean("mobileOnly", false)
     val autoDelete = rxPrefs.getInteger("autoDelete", 0)
+    val spamAutoDelete = rxPrefs.getInteger("spamAutoDelete", 0)
+    val trashEnabled = rxPrefs.getBoolean("trashEnabled", true)
+    val trashRetentionDays = rxPrefs.getInteger("trashRetentionDays", 5)
+    val defaultInboxTab = rxPrefs.getInteger("defaultInboxTab", 0)
     val longAsMms = rxPrefs.getBoolean("longAsMms", false)
     val mmsSize = rxPrefs.getInteger("mmsSize", 300)
     val logging = rxPrefs.getBoolean("logging", false)
     // partisan
-    val globalEncryptionKey = rxPrefs.getString("globalEncryptionKey", "")
+    val globalEncryptionKey = ProtectedStringPreference(context, rxPrefs.getString("globalEncryptionKey", ""))
     val smsForReset = rxPrefs.getString("smsForReset", "")
     val deleteEncryptedAfter = rxPrefs.getInteger("deleteEncryptedAfter", 0)
     val encodingScheme = rxPrefs.getInteger("encodingScheme", getDefaultSchemeByLocale())
@@ -172,7 +217,7 @@ class Preferences @Inject constructor(
     val keyChanges: Observable<String> = Observable.create<String> { emitter ->
         // Making this a lambda would cause it to be GCd
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            emitter.onNext(key)
+            key?.let(emitter::onNext)
         }
 
         emitter.setCancellable {
@@ -184,10 +229,10 @@ class Preferences @Inject constructor(
 
     fun theme(
         recipientId: Long = 0,
-        default: Int = rxPrefs.getInteger("theme", 0xFFD21F34.toInt()).get()
+        default: Int = rxPrefs.getInteger("theme", 0xFF2196F3.toInt()).get()
     ): Preference<Int> {
         return when (recipientId) {
-            0L -> rxPrefs.getInteger("theme", 0xFFD21F34.toInt())
+            0L -> rxPrefs.getInteger("theme", 0xFF2196F3.toInt())
             else -> rxPrefs.getInteger("theme_$recipientId", default)
         }
     }

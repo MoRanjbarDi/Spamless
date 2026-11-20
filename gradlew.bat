@@ -1,3 +1,4 @@
+@set REALM_DISABLE_ANALYTICS=true
 @if "%DEBUG%" == "" @echo off
 @rem ##########################################################################
 @rem

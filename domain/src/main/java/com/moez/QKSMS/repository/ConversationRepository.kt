@@ -26,7 +26,7 @@ import io.realm.RealmResults
 
 interface ConversationRepository {
 
-    fun getConversations(archived: Boolean = false): RealmResults<Conversation>
+    fun getConversations(archived: Boolean = false, contactsOnly: Boolean? = null): RealmResults<Conversation>
 
     fun getSpamConversations(): RealmResults<Conversation>
 
@@ -42,7 +42,7 @@ interface ConversationRepository {
 
     fun setConversationName(id: Long, name: String)
 
-    fun searchConversations(query: CharSequence): List<SearchResult>
+    fun searchConversations(query: CharSequence, spam: Boolean = false, archived: Boolean = false, contactsOnly: Boolean? = null): List<SearchResult>
 
     fun getBlockedConversations(): RealmResults<Conversation>
 
@@ -111,6 +111,8 @@ interface ConversationRepository {
     fun setDeleteReceivedAfter(threadId: Long, durationId: Int)
 
     fun setDeleteSentAfter(threadId: Long, durationId: Int)
+
+    fun markNotSpam(threadIds: List<Long>, messageIds: List<Long> = emptyList()): List<Long>
 
     fun resetHiddenSettings()
 

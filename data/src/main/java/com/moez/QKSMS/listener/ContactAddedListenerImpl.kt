@@ -42,9 +42,9 @@ class ContactAddedListenerImpl @Inject constructor(
         return ContactContentObserver(context).observable
     }
 
-    private class ContactContentObserver(context: Context) : ContentObserver(Handler()) {
+    private class ContactContentObserver(context: Context) : ContentObserver(Handler(android.os.Looper.getMainLooper())) {
 
-        private val subject = BehaviorSubject.createDefault<Unit>(Unit)
+        private val subject = io.reactivex.subjects.PublishSubject.create<Unit>()
 
         val observable: Observable<Unit> = subject
                 .doOnSubscribe { context.contentResolver.registerContentObserver(URI, true, this) }

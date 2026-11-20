@@ -29,6 +29,7 @@ data class ComposeState(
     val hasError: Boolean = false,
     val editingMode: Boolean = false,
     val threadId: Long = 0,
+    val showSpamMessages: Boolean = false,
     val selectedChips: List<Recipient> = ArrayList(),
     val sendAsGroup: Boolean = true,
     val conversationtitle: String = "",

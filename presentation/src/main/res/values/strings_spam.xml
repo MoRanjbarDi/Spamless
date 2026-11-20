@@ -1,4 +1,3 @@
-
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="title_spam">Spam</string>
@@ -16,4 +15,21 @@
         <item>Beep</item>
         <item>Default SMS notification sound</item>
     </string-array>
+    <string name="inbox_tab_contacts">Contacts</string>
+    <string name="inbox_tab_non_contacts">Others</string>
+    <string name="search_messages_hint">Search messages</string>
+    <string name="spam_search_hint">Search spam</string>
+    <string name="menu_select_all">Select all</string>
+    <string name="thread_show_spam">Show spam messages</string>
+    <string name="spam_notifications">Spam notifications</string>
+    <string-array name="spam_notification_modes">
+        <item>Off</item>
+        <item>Dismiss after 10 seconds</item>
+        <item>On</item>
+    </string-array>
+    <string name="spam_message_status">Spam · %1$s</string>
+    <string name="inbox_tab_all">All</string>
+    <string name="spam_auto_delete">Delete spam messages automatically</string>
+    <string name="spam_auto_delete_dialog_message">Automatically delete spam messages older than the number of days you choose. Other messages are kept. Choose Never to turn this off.</string>
+    <string name="backup_choose_file">Choose another file</string>
 </resources>

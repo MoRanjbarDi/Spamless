@@ -18,6 +18,8 @@
  */
 package com.moez.QKSMS.common.util
 
+import com.klinker.android.send_message.PendingIntents
+
 import com.moez.QKSMS.util.SpamThread
 import android.app.Notification
 import android.app.NotificationChannel
@@ -69,7 +71,8 @@ class NotificationManagerImpl @Inject constructor(
     private val prefs: Preferences,
     private val messageRepo: MessageRepository,
     private val permissions: PermissionManager,
-    private val phoneNumberUtils: PhoneNumberUtils
+    private val phoneNumberUtils: PhoneNumberUtils,
+    private val spamSoundPlayer: SpamSoundPlayer
 ) : com.moez.QKSMS.manager.NotificationManager {
 
     companion object {
@@ -91,21 +94,46 @@ class NotificationManagerImpl @Inject constructor(
      */
     override fun clear(threadId: Long) {
         notificationManager.cancel(threadId.toInt())
+        com.moez.QKSMS.receiver.SpamNotificationTimeoutReceiver.setTimeout(context, threadId, false)
         if (threadId >= 0) notificationManager.cancel(threadId.toInt() + 100000)
     }
 
+    private fun spamCanVibrate(): Boolean {
+        val audio = context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        return prefs.spamVibration.get() && audio.ringerMode != android.media.AudioManager.RINGER_MODE_SILENT &&
+            (Build.VERSION.SDK_INT < 23 || manager.currentInterruptionFilter == android.app.NotificationManager.INTERRUPTION_FILTER_ALL)
+    }
+    private fun vibrateSpam() {
+        if (!spamCanVibrate()) return
+        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+        val attributes = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT).build()
+        if (Build.VERSION.SDK_INT >= 26) vibrator.vibrate(android.os.VibrationEffect.createWaveform(VIBRATE_PATTERN, -1), attributes)
+        else vibrator.vibrate(VIBRATE_PATTERN, -1, attributes)
+    }
     private fun spamSound(threadId: Long): Uri? = when (prefs.spamArrivalSound.get()) {
         0 -> null
         2 -> prefs.ringtone(SpamThread.providerId(threadId)).get().takeIf { it.isNotEmpty() }?.let(Uri::parse)
         else -> Uri.parse("android.resource://${context.packageName}/raw/spam_beep")
     }
 
-    override fun update(threadId: Long) {
-        // If notifications are disabled, don't do anything
+    override fun update(threadId: Long, alert: Boolean) {
         if (!prefs.notifications(SpamThread.providerId(threadId)).get()) {
+            clear(threadId)
+            return
+        }
+        // Only a newly received, unread message may play a sound. Refreshes/cleanup stay quiet.
+        if (threadId < 0 && prefs.spamNotifications.get() == 0) {
+            clear(threadId)
+            if (alert && messageRepo.getUnreadUnseenMessages(threadId).isNotEmpty()) {
+                spamSound(threadId)?.let(spamSoundPlayer::play)
+                vibrateSpam()
+            }
             return
         }
 
+        if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+            != android.content.pm.PackageManager.PERMISSION_GRANTED) return
         val messages = messageRepo.getUnreadUnseenMessages(threadId)
 
         // If there are no messages to be displayed, make sure that the notification is dismissed
@@ -125,11 +153,11 @@ class NotificationManagerImpl @Inject constructor(
         val taskStackBuilder = TaskStackBuilder.create(context)
                 .addParentStack(ComposeActivity::class.java)
                 .addNextIntent(contentIntent)
-        val contentPI = taskStackBuilder.getPendingIntent(threadId.toInt(), PendingIntent.FLAG_UPDATE_CURRENT)
+        val contentPI = taskStackBuilder.getPendingIntent(threadId.toInt(), PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
 
         val seenIntent = Intent(context, MarkSeenReceiver::class.java).putExtra("threadId", threadId)
         val seenPI = PendingIntent.getBroadcast(context, threadId.toInt(), seenIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT)
+                PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
 
         // We can't store a null preference, so map it to a null Uri if the pref string is empty
         val ringtone = (if (threadId < 0) spamSound(threadId) else prefs.ringtone(threadId).get()
@@ -144,7 +172,9 @@ class NotificationManagerImpl @Inject constructor(
 
         if (threadId < 0) createNotificationChannel(threadId)
         val notification = NotificationCompat.Builder(context, getChannelIdForNotification(threadId))
+                .setTimeoutAfter(if (threadId < 0 && prefs.spamNotifications.get() == 1) 10_000L else 0L)
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setOnlyAlertOnce(!alert)
                 .setColor(colors.theme(lastRecipient).theme)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setSmallIcon(R.drawable.ic_notification)
@@ -155,8 +185,7 @@ class NotificationManagerImpl @Inject constructor(
                 .setSound(ringtone)
                 .setLights(Color.WHITE, 500, 2000)
                 .setWhen(conversation.lastMessage?.date ?: System.currentTimeMillis())
-                .setVibrate(if ((threadId >= 0 || prefs.spamArrivalSound.get() == 2) &&
-                    prefs.vibration(SpamThread.providerId(threadId)).get()) VIBRATE_PATTERN else longArrayOf(0))
+                .setVibrate(if (if (threadId < 0) spamCanVibrate() else prefs.vibration(threadId).get()) VIBRATE_PATTERN else longArrayOf(0))
 
         // Tell the notification if it's a group message
         val messagingStyle = NotificationCompat.MessagingStyle("Me")
@@ -209,7 +238,7 @@ class NotificationManagerImpl @Inject constructor(
                 ?.let { futureGet -> tryOrNull(false) { futureGet.get() } }
 
         // Bind the notification contents based on the notification preview mode
-        when (prefs.notificationPreviews(threadId).get()) {
+        when (prefs.notificationPreviews(SpamThread.providerId(threadId)).get()) {
             Preferences.NOTIFICATION_PREVIEWS_ALL -> {
                 notification
                         .setLargeIcon(avatar)
@@ -250,7 +279,7 @@ class NotificationManagerImpl @Inject constructor(
                         Preferences.NOTIFICATION_ACTION_ARCHIVE -> {
                             val intent = Intent(context, MarkArchivedReceiver::class.java).putExtra("threadId", threadId)
                             val pi = PendingIntent.getBroadcast(context, threadId.toInt(), intent,
-                                    PendingIntent.FLAG_UPDATE_CURRENT)
+                                    PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
                             NotificationCompat.Action.Builder(R.drawable.ic_archive_white_24dp, actionLabels[action], pi)
                                     .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_ARCHIVE).build()
                         }
@@ -261,7 +290,7 @@ class NotificationManagerImpl @Inject constructor(
                                     .putExtra("threadId", threadId)
                                     .putExtra("messageIds", messageIds)
                             val pi = PendingIntent.getBroadcast(context, threadId.toInt(), intent,
-                                    PendingIntent.FLAG_UPDATE_CURRENT)
+                                    PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
                             NotificationCompat.Action.Builder(R.drawable.ic_delete_white_24dp, actionLabels[action], pi)
                                     .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_DELETE).build()
                         }
@@ -269,7 +298,7 @@ class NotificationManagerImpl @Inject constructor(
                         Preferences.NOTIFICATION_ACTION_BLOCK -> {
                             val intent = Intent(context, BlockThreadReceiver::class.java).putExtra("threadId", threadId)
                             val pi = PendingIntent.getBroadcast(context, threadId.toInt(), intent,
-                                    PendingIntent.FLAG_UPDATE_CURRENT)
+                                    PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
                             NotificationCompat.Action.Builder(R.drawable.ic_block_white_24dp, actionLabels[action], pi)
                                     .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MUTE).build()
                         }
@@ -277,7 +306,7 @@ class NotificationManagerImpl @Inject constructor(
                         Preferences.NOTIFICATION_ACTION_READ -> {
                             val intent = Intent(context, MarkReadReceiver::class.java).putExtra("threadId", threadId)
                             val pi = PendingIntent.getBroadcast(context, threadId.toInt(), intent,
-                                    PendingIntent.FLAG_UPDATE_CURRENT)
+                                    PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
                             NotificationCompat.Action.Builder(R.drawable.ic_check_white_24dp, actionLabels[action], pi)
                                     .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MARK_AS_READ).build()
                         }
@@ -288,7 +317,7 @@ class NotificationManagerImpl @Inject constructor(
                             } else {
                                 val intent = Intent(context, QkReplyActivity::class.java).putExtra("threadId", threadId)
                                 val pi = PendingIntent.getActivity(context, threadId.toInt(), intent,
-                                        PendingIntent.FLAG_UPDATE_CURRENT)
+                                        PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
                                 NotificationCompat.Action
                                         .Builder(R.drawable.ic_reply_white_24dp, actionLabels[action], pi)
                                         .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).build()
@@ -300,7 +329,7 @@ class NotificationManagerImpl @Inject constructor(
                             val intentAction = if (permissions.hasCalling()) Intent.ACTION_CALL else Intent.ACTION_DIAL
                             val intent = Intent(intentAction, Uri.parse("tel:$address"))
                             val pi = PendingIntent.getActivity(context, threadId.toInt(), intent,
-                                    PendingIntent.FLAG_UPDATE_CURRENT)
+                                    PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
                             NotificationCompat.Action.Builder(R.drawable.ic_call_white_24dp, actionLabels[action], pi)
                                     .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_CALL).build()
                         }
@@ -321,6 +350,8 @@ class NotificationManagerImpl @Inject constructor(
         }
 
         notificationManager.notify(threadId.toInt(), notification.build())
+        com.moez.QKSMS.receiver.SpamNotificationTimeoutReceiver.setTimeout(context, threadId,
+            prefs.spamNotifications.get() == 1)
 
         // Wake screen
         if (threadId >= 0 && prefs.wakeScreen(threadId).get()) {
@@ -354,7 +385,7 @@ class NotificationManagerImpl @Inject constructor(
         val taskStackBuilder = TaskStackBuilder.create(context)
             .addParentStack(ComposeActivity::class.java)
             .addNextIntent(contentIntent)
-        val contentPI = taskStackBuilder.getPendingIntent(threadId.toInt(), PendingIntent.FLAG_UPDATE_CURRENT)
+        val contentPI = taskStackBuilder.getPendingIntent(threadId.toInt(), PendingIntents.immutable(PendingIntent.FLAG_UPDATE_CURRENT))
 
         val notification = NotificationCompat.Builder(context, getChannelIdForNotification(threadId))
                 .setContentTitle(context.getString(R.string.notification_message_failed_title))
@@ -374,7 +405,7 @@ class NotificationManagerImpl @Inject constructor(
     private fun getReplyAction(threadId: Long): NotificationCompat.Action {
         val replyIntent = Intent(context, RemoteMessagingReceiver::class.java).putExtra("threadId", threadId)
         val replyPI = PendingIntent.getBroadcast(context, threadId.toInt(), replyIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT)
+                PendingIntents.mutable(PendingIntent.FLAG_UPDATE_CURRENT))
 
         val title = context.resources.getStringArray(R.array.notification_actions)[
                 Preferences.NOTIFICATION_ACTION_REPLY]
@@ -408,7 +439,7 @@ class NotificationManagerImpl @Inject constructor(
                 context.getString(R.string.spam_arrival_sound) + " · " +
                     context.resources.getStringArray(R.array.spam_arrival_sounds)[prefs.spamArrivalSound.get().coerceIn(0, 2)],
                 NotificationManager.IMPORTANCE_HIGH).apply {
-                val vibrate = prefs.spamArrivalSound.get() == 2 && prefs.vibration(SpamThread.providerId(threadId)).get()
+                val vibrate = spamCanVibrate()
                 enableVibration(vibrate)
                 vibrationPattern = if (vibrate) VIBRATE_PATTERN else longArrayOf(0)
                 setSound(spamSound(threadId), AudioAttributes.Builder()
@@ -484,7 +515,7 @@ class NotificationManagerImpl @Inject constructor(
             // Android channels have immutable sounds. A distinct ID makes a setting change take effect.
             val mode = prefs.spamArrivalSound.get().coerceIn(0, 2)
             val soundKey = if (mode == 2) prefs.ringtone(SpamThread.providerId(threadId)).get().hashCode() else 0
-            val vibrate = mode == 2 && prefs.vibration(SpamThread.providerId(threadId)).get()
+            val vibrate = spamCanVibrate()
             return "spam_${mode}_${soundKey}_$vibrate"
         }
         return when (threadId) {

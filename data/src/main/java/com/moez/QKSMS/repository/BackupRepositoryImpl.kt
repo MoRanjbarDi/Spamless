@@ -53,7 +53,8 @@ class BackupRepositoryImpl @Inject constructor(
 ) : BackupRepository {
 
     companion object {
-        private val BACKUP_DIRECTORY = Environment.getExternalStorageDirectory().toString() + "/QKSMS/Backups"
+        private val BACKUP_DIRECTORY = Environment.getExternalStorageDirectory().toString() + "/Spamless/Backups"
+        private val LEGACY_BACKUP_DIRECTORY = Environment.getExternalStorageDirectory().toString() + "/QKSMS/Backups"
     }
 
     data class Backup(
@@ -89,6 +90,7 @@ class BackupRepositoryImpl @Inject constructor(
     private val restoreProgress: Subject<BackupRepository.Progress> =
             BehaviorSubject.createDefault(BackupRepository.Progress.Idle())
 
+    private val backupFilesChanged = BehaviorSubject.createDefault(Unit)
     @Volatile private var stopFlag: Boolean = false
 
     override fun performBackup() {
@@ -100,7 +102,7 @@ class BackupRepositoryImpl @Inject constructor(
         // Map all the messages into our object we'll use for the Json mapping
         val backupMessages = Realm.getDefaultInstance().use { realm ->
             // Get the messages from realm
-            val messages = realm.where(Message::class.java).sort("date").findAll().createSnapshot()
+            val messages = realm.where(Message::class.java).equalTo("deletedAt", 0L).sort("date").findAll().createSnapshot()
             messageCount = messages.size
 
             // Map the messages to the new format
@@ -119,13 +121,32 @@ class BackupRepositoryImpl @Inject constructor(
         val json = adapter.toJson(Backup(messageCount, backupMessages)).toByteArray()
 
         try {
-            // Create the directory and file
-            val dir = File(BACKUP_DIRECTORY).apply { mkdirs() }
             val timestamp = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(System.currentTimeMillis())
-            val file = File(dir, "backup-$timestamp.json")
-
-            // Write the log to the file
-            FileOutputStream(file, true).use { fileOutputStream -> fileOutputStream.write(json) }
+            val name = "backup-$timestamp.json"
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                // Shared Downloads survive uninstall without broad file-access permission.
+                val values = android.content.ContentValues().apply {
+                    put(android.provider.MediaStore.Downloads.DISPLAY_NAME, name)
+                    put(android.provider.MediaStore.Downloads.MIME_TYPE, "application/json")
+                    put(android.provider.MediaStore.Downloads.RELATIVE_PATH, "Download/Spamless/Backups/")
+                    put(android.provider.MediaStore.Downloads.IS_PENDING, 1)
+                }
+                val uri = context.contentResolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    ?: throw java.io.IOException("Unable to create backup")
+                try {
+                    (context.contentResolver.openOutputStream(uri) ?: throw java.io.IOException("Unable to open backup"))
+                        .use { it.write(json) }
+                    values.clear(); values.put(android.provider.MediaStore.Downloads.IS_PENDING, 0)
+                    context.contentResolver.update(uri, values, null, null)
+                } catch (error: Exception) {
+                    context.contentResolver.delete(uri, null, null)
+                    throw error
+                }
+            } else {
+                val dir = File(BACKUP_DIRECTORY).apply { mkdirs() }
+                FileOutputStream(File(dir, name)).use { it.write(json) }
+            }
+            backupFilesChanged.onNext(Unit)
         } catch (e: Exception) {
             Timber.w(e)
         }
@@ -151,8 +172,14 @@ class BackupRepositoryImpl @Inject constructor(
 
     override fun getBackupProgress(): Observable<BackupRepository.Progress> = backupProgress
 
-    override fun getBackups(): Observable<List<BackupFile>> = QkFileObserver(BACKUP_DIRECTORY).observable
-            .map { File(BACKUP_DIRECTORY).listFiles() ?: arrayOf() }
+    override fun getBackups(): Observable<List<BackupFile>> {
+        if (android.os.Build.VERSION.SDK_INT >= 30) return backupFilesChanged
+            .observeOn(Schedulers.io()).map { readSharedBackups() }
+        return Observable.merge(
+            QkFileObserver(BACKUP_DIRECTORY).observable,
+            QkFileObserver(LEGACY_BACKUP_DIRECTORY).observable)
+            .map { (File(BACKUP_DIRECTORY).listFiles() ?: emptyArray()) +
+                (File(LEGACY_BACKUP_DIRECTORY).listFiles() ?: emptyArray()) }
             .subscribeOn(Schedulers.io())
             .observeOn(Schedulers.computation())
             .map { files ->
@@ -171,14 +198,41 @@ class BackupRepositoryImpl @Inject constructor(
             }
             .map { files -> files.sortedByDescending { file -> file.date } }
 
+    }
+
+    @android.annotation.TargetApi(30)
+    private fun readSharedBackups(): List<BackupFile> {
+        val collection = android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI
+        val columns = arrayOf(android.provider.MediaStore.Downloads._ID,
+            android.provider.MediaStore.Downloads.DATE_MODIFIED, android.provider.MediaStore.Downloads.SIZE)
+        val rows = mutableListOf<BackupFile>()
+        context.contentResolver.query(collection, columns,
+            "${android.provider.MediaStore.Downloads.RELATIVE_PATH} = ? AND ${android.provider.MediaStore.Downloads.IS_PENDING} = 0",
+            arrayOf("Download/Spamless/Backups/"), null)?.use { cursor ->
+            while (cursor.moveToNext()) {
+                val uri = android.content.ContentUris.withAppendedId(collection, cursor.getLong(0))
+                val metadata = tryOrNull(false) {
+                    context.contentResolver.openInputStream(uri)?.source()?.buffer()?.use {
+                        moshi.adapter(BackupMetadata::class.java).fromJson(it)
+                    }
+                } ?: continue
+                rows.add(BackupFile(uri.toString(), cursor.getLong(1) * 1000, metadata.messageCount, cursor.getLong(2)))
+            }
+        }
+        return rows.sortedByDescending { it.date }
+    }
+
     override fun performRestore(filePath: String) {
         // If a backupFile or restore is already running, don't do anything
         if (isBackupOrRestoreRunning()) return
 
         restoreProgress.onNext(BackupRepository.Progress.Parsing())
 
-        val file = File(filePath)
-        val backup = file.source().buffer().use { source ->
+        val input = if (filePath.startsWith("content://")) {
+            context.contentResolver.openInputStream(android.net.Uri.parse(filePath))?.source()
+                ?: throw java.io.IOException("Unable to open backup")
+        } else File(filePath).source()
+        val backup = input.buffer().use { source ->
             moshi.adapter(Backup::class.java).fromJson(source)
         }
 

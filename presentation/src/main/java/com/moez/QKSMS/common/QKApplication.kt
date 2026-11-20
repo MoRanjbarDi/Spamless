@@ -68,6 +68,7 @@ class QKApplication : Application(), HasActivityInjector, HasBroadcastReceiverIn
     @Inject lateinit var fileLoggingTree: FileLoggingTree
     @Inject lateinit var nightModeManager: NightModeManager
     @Inject lateinit var realmMigration: QkRealmMigration
+    @Inject lateinit var deleteOldMessages: com.moez.QKSMS.interactor.DeleteOldMessages
     @Inject lateinit var referralManager: ReferralManager
 
     override fun onCreate() {
@@ -77,13 +78,35 @@ class QKApplication : Application(), HasActivityInjector, HasBroadcastReceiverIn
         appComponent.inject(this)
 
         Realm.init(this)
-        Realm.setDefaultConfiguration(RealmConfiguration.Builder()
-                .compactOnLaunch()
-                .migration(realmMigration)
-                .schemaVersion(QkRealmMigration.SchemaVersion)
-                .build())
+        val storageKey = com.moez.QKSMS.util.KeyVault.key(this, "realm-key", 64)
+        val oldConfig = RealmConfiguration.Builder().migration(realmMigration)
+            .schemaVersion(QkRealmMigration.SchemaVersion).build()
+        val marker = java.io.File(noBackupFilesDir, "realm-encrypted-v1")
+        if (!marker.exists() && java.io.File(oldConfig.path).exists()) {
+            val temporary = java.io.File(oldConfig.path + ".encrypted")
+            temporary.delete()
+            // If a previous launch completed the atomic replacement, do not reopen as plaintext.
+            val alreadyEncrypted = try {
+                Realm.getInstance(RealmConfiguration.Builder().encryptionKey(storageKey)
+                    .migration(realmMigration).schemaVersion(QkRealmMigration.SchemaVersion).build()).use { }
+                true
+            } catch (_: io.realm.exceptions.RealmFileException) { false }
+            if (!alreadyEncrypted) {
+                Realm.getInstance(oldConfig).use { it.writeEncryptedCopyTo(temporary, storageKey) }
+                check(temporary.renameTo(java.io.File(oldConfig.path))) { "Unable to migrate protected database" }
+            }
+        }
+        marker.writeText("1")
+        Realm.setDefaultConfiguration(RealmConfiguration.Builder().encryptionKey(storageKey)
+                .compactOnLaunch().migration(realmMigration)
+                .schemaVersion(QkRealmMigration.SchemaVersion).build())
 
         qkMigration.performMigration()
+        com.moez.QKSMS.service.AutoDeleteService.scheduleJob(this)
+        GlobalScope.launch(Dispatchers.IO) {
+            try { deleteOldMessages.buildObservable(Unit).blockingSubscribe() }
+            catch (error: Exception) { Timber.w(error, "Unable to clean up expired messages") }
+        }
 
         GlobalScope.launch(Dispatchers.IO) {
             referralManager.trackReferrer()

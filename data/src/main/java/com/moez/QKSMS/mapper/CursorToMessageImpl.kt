@@ -127,8 +127,7 @@ class CursorToMessageImpl @Inject constructor(
                     attachmentType = Message.AttachmentType.NOT_LOADED
                 }
             }
-            threadId = SpamThread.classify(
-                threadId, isSms() && !isMe(), body, preferences.spamFilter())
+            threadId = preferences.classifySpam(threadId, isSms() && !isMe(), body, address, type, contentId)
         }
     }
 

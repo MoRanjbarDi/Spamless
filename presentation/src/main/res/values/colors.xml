@@ -322,4 +322,5 @@
         <item>#263238</item>
     </array>
 
+    <color name="spamless_launcher_background">#1F52D2</color>
 </resources>

@@ -20,6 +20,7 @@ package com.moez.QKSMS.feature.main
 
 import androidx.recyclerview.widget.ItemTouchHelper
 import com.moez.QKSMS.R
+import com.moez.QKSMS.common.util.extensions.makeToast
 import com.moez.QKSMS.common.Navigator
 import com.moez.QKSMS.common.base.QkViewModel
 import com.moez.QKSMS.extensions.mapNotNull
@@ -58,11 +59,12 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 class MainViewModel @Inject constructor(
+    private val context: android.content.Context,
     billingManager: BillingManager,
     contactAddedListener: ContactAddedListener,
     markAllSeen: MarkAllSeen,
     migratePreferences: MigratePreferences,
-    syncRepository: SyncRepository,
+    private val syncRepository: SyncRepository,
     private val changelogManager: ChangelogManager,
     private val conversationRepo: ConversationRepository,
     private val notificationManager: com.moez.QKSMS.manager.NotificationManager,
@@ -80,9 +82,26 @@ class MainViewModel @Inject constructor(
     private val ratingManager: RatingManager,
     private val syncContacts: SyncContacts,
     private val syncMessages: SyncMessages
-) : QkViewModel<MainView, MainState>(MainState(page = Inbox(data = conversationRepo.getConversations()))) {
+) : QkViewModel<MainView, MainState>(MainState(
+    inboxTab = InboxTab.values()[prefs.defaultInboxTab.get().coerceIn(0, 2)],
+    page = Inbox(data = conversationRepo.getConversations(contactsOnly = InboxTab.values()[prefs.defaultInboxTab.get().coerceIn(0, 2)].contactsOnly))
+)) {
 
     private var keyDialogShowed = false
+    private val contactRefreshRunning = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    private fun refreshContacts(showSpinner: Boolean) {
+        if (!permissionManager.hasContacts() || !contactRefreshRunning.compareAndSet(false, true)) return
+        if (showSpinner) newState { copy(refreshing = true) }
+        disposables += io.reactivex.Completable.fromAction { syncRepository.syncContacts() }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doFinally {
+                contactRefreshRunning.set(false)
+                newState { copy(refreshing = false) }
+            }
+            .subscribe({}, { error -> timber.log.Timber.w(error, "Unable to refresh contacts") })
+    }
 
     init {
         disposables += prefs.keyChanges
@@ -90,7 +109,10 @@ class MainViewModel @Inject constructor(
             .startWith("initialSpamClassification")
             .observeOn(Schedulers.single())
             .subscribe({
+                val signature = prefs.currentSpamClassificationSignature()
+                if (prefs.spamClassificationSignature.get() == signature) return@subscribe
                 val changed = conversationRepo.reclassifySpam()
+                prefs.spamClassificationSignature.set(signature)
                 changed.forEach(notificationManager::clear)
                 if (changed.isNotEmpty()) updateBadge.execute(Unit)
             }, timber.log.Timber::w)
@@ -114,9 +136,6 @@ class MainViewModel @Inject constructor(
         disposables += billingManager.upgradeStatus
                 .subscribe { upgraded -> newState { copy(upgraded = upgraded) } }
 
-        // Show the rating UI
-        disposables += ratingManager.shouldShowRating
-                .subscribe { show -> newState { copy(showRating = show) } }
 
         disposables += prefs.globalEncryptionKey.asObservable().subscribe {
             newState { copy(keysIsUnset = it.isNullOrBlank()) }
@@ -139,10 +158,16 @@ class MainViewModel @Inject constructor(
             disposables += contactAddedListener.listen()
                     .debounce(1, TimeUnit.SECONDS)
                     .subscribeOn(Schedulers.io())
-                    .subscribe { syncContacts.execute(Unit) }
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe { refreshContacts(false) }
         }
 
-        ratingManager.addSession()
+        disposables += prefs.defaultInboxTab.asObservable().skip(1)
+            .observeOn(AndroidSchedulers.mainThread()).subscribe { index ->
+                val tab = InboxTab.values()[index.coerceIn(0, 2)]
+                newState { copy(inboxTab = tab, page = if (page is Inbox)
+                    Inbox(data = conversationRepo.getConversations(contactsOnly = tab.contactsOnly)) else page) }
+            }
         markAllSeen.execute(Unit)
     }
 
@@ -153,6 +178,16 @@ class MainViewModel @Inject constructor(
             !permissionManager.isDefaultSms() -> view.requestDefaultSms()
             !permissionManager.hasReadSms() || !permissionManager.hasContacts() -> view.requestPermissions()
         }
+
+        view.refreshIntent.autoDisposable(view.scope()).subscribe {
+            view.clearSelection()
+            if (!permissionManager.hasContacts()) {
+                newState { copy(refreshing = false) }
+                view.requestPermissions()
+            } else refreshContacts(true)
+        }
+        view.activityResumedIntent.filter { it }.throttleFirst(2, TimeUnit.SECONDS)
+            .autoDisposable(view.scope()).subscribe { refreshContacts(false) }
 
         val permissions = view.activityResumedIntent
                 .filter { resumed -> resumed }
@@ -217,28 +252,59 @@ class MainViewModel @Inject constructor(
                 .autoDisposable(view.scope())
                 .subscribe { navigator.showChangelog() }
 
-        view.queryChangedIntent
-                .debounce(200, TimeUnit.MILLISECONDS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .withLatestFrom(state) { query, state ->
-                    if (query.isEmpty() && state.page is Searching) {
-                        newState { copy(page = Inbox(data = conversationRepo.getConversations())) }
-                    }
-                    query
-                }
-                .filter { query -> query.length >= 2 }
-                .map { query -> query.trim() }
+        view.inboxTabIntent
                 .distinctUntilChanged()
-                .doOnNext {
+                .autoDisposable(view.scope())
+                .subscribe { tab ->
+                    view.clearSelection()
                     newState {
-                        val page = (page as? Searching) ?: Searching()
-                        copy(page = page.copy(loading = true))
+                        copy(inboxTab = tab, page = if (page is Searching) page else
+                            Inbox(data = conversationRepo.getConversations(contactsOnly = tab.contactsOnly)))
                     }
                 }
-                .observeOn(Schedulers.io())
-                .map(conversationRepo::searchConversations)
+
+        io.reactivex.rxkotlin.Observables.combineLatest(
+                view.queryChangedIntent.map { it.toString().trim() }.distinctUntilChanged(),
+                state.map { state ->
+                    Triple(state.page is Spam || (state.page as? Searching)?.spam == true,
+                        state.page is Archived || (state.page as? Searching)?.archived == true, state.inboxTab)
+                }.distinctUntilChanged()) { query, scope -> query to scope }
+                .switchMap { (query, scope) ->
+                    if (query.isNotEmpty()) newState { copy(page = Searching(spam = scope.first, archived = scope.second, loading = true)) }
+                    // Cancel immediately when the query or folder changes, including during debounce.
+                    io.reactivex.Observable.timer(200, TimeUnit.MILLISECONDS)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .switchMap {
+                            val (spam, archived, tab) = scope
+                            if (query.isEmpty()) {
+                                newState {
+                                    if (page !is Searching) this else copy(page = when {
+                                        spam -> Spam(data = conversationRepo.getSpamConversations())
+                                        archived -> Archived(data = conversationRepo.getConversations(true))
+                                        else -> Inbox(data = conversationRepo.getConversations(contactsOnly = tab.contactsOnly))
+                                    })
+                                }
+                                io.reactivex.Observable.empty<List<com.moez.QKSMS.model.SearchResult>>()
+                            } else {
+                                newState { copy(page = Searching(spam = spam, archived = archived, loading = true)) }
+                                io.reactivex.Observable.defer {
+                                    val task = java.util.concurrent.FutureTask {
+                                        conversationRepo.searchConversations(query, spam, archived,
+                                            if (spam || archived) null else tab.contactsOnly)
+                                    }
+                                    val worker = Schedulers.io().scheduleDirect(task)
+                                    io.reactivex.Observable.fromFuture(task)
+                                        .subscribeOn(Schedulers.io())
+                                        .doFinally { task.cancel(true); worker.dispose() }
+                                }
+                                    .onErrorReturn { error -> timber.log.Timber.w(error); emptyList() }
+                                    .observeOn(AndroidSchedulers.mainThread())
+                                    .doOnNext { data -> newState { copy(page = Searching(spam, archived, false, data)) } }
+                            }
+                        }
+                }
                 .autoDisposable(view.scope())
-                .subscribe { data -> newState { copy(page = Searching(loading = false, data = data)) } }
+                .subscribe({}, timber.log.Timber::w)
 
         view.activityResumedIntent
                 .filter { resumed -> !resumed }
@@ -279,7 +345,10 @@ class MainViewModel @Inject constructor(
         view.navigationIntent
                 .withLatestFrom(state) { drawerItem, state ->
                     newState { copy(drawerOpen = false) }
-                    if (drawerItem in listOf(NavItem.INBOX, NavItem.ARCHIVED, NavItem.SPAM)) view.clearSelection()
+                    if (drawerItem in listOf(NavItem.INBOX, NavItem.ARCHIVED, NavItem.SPAM)) {
+                        view.clearSelection()
+                        view.clearSearch()
+                    }
                     when (drawerItem) {
                         NavItem.BACK -> when {
                             state.drawerOpen -> Unit
@@ -288,10 +357,11 @@ class MainViewModel @Inject constructor(
                             state.page is Archived && state.page.selected > 0 -> view.clearSelection()
                             state.page is Spam && state.page.selected > 0 -> view.clearSelection()
                             state.page !is Inbox -> {
-                                newState { copy(page = Inbox(data = conversationRepo.getConversations())) }
+                                newState { copy(page = Inbox(data = conversationRepo.getConversations(contactsOnly = inboxTab.contactsOnly))) }
                             }
                             else -> newState { copy(hasError = true) }
                         }
+                        NavItem.TRASH -> navigator.showTrash()
                         NavItem.BACKUP -> navigator.showBackup()
                         NavItem.SCHEDULED -> navigator.showScheduled()
                         NavItem.BLOCKING -> navigator.showBlockedConversations()
@@ -303,10 +373,9 @@ class MainViewModel @Inject constructor(
                     }
                     drawerItem
                 }
-                .distinctUntilChanged()
                 .doOnNext { drawerItem ->
                     when (drawerItem) {
-                        NavItem.INBOX -> newState { copy(page = Inbox(data = conversationRepo.getConversations())) }
+                        NavItem.INBOX -> newState { copy(page = Inbox(data = conversationRepo.getConversations(contactsOnly = inboxTab.contactsOnly))) }
                         NavItem.ARCHIVED -> newState { copy(page = Archived(data = conversationRepo.getConversations(true))) }
                         NavItem.SPAM -> newState { copy(page = Spam(data = conversationRepo.getSpamConversations())) }
                         else -> Unit
@@ -451,6 +520,23 @@ class MainViewModel @Inject constructor(
                 }
                 .autoDisposable(view.scope())
                 .subscribe()
+
+        view.optionsItemIntent.filter { it == R.id.not_spam_sender }
+            .withLatestFrom(view.conversationsSelectedIntent) { _, ids -> ids.toList() }
+            .filter { it.isNotEmpty() }
+            .doOnNext { view.clearSelection() }
+            .flatMapSingle { ids -> io.reactivex.Single.fromCallable {
+                    val affected = conversationRepo.markNotSpam(ids)
+                    affected.forEach(notificationManager::clear)
+                    if (affected.isNotEmpty()) updateBadge.execute(Unit)
+                    affected
+                }
+                .subscribeOn(Schedulers.io())
+                .onErrorReturn { error -> timber.log.Timber.w(error, "Unable to mark messages as not spam"); emptyList<Long>() } }
+            .observeOn(AndroidSchedulers.mainThread())
+            .autoDisposable(view.scope()).subscribe { affected ->
+                context.makeToast(if (affected.isEmpty()) R.string.spam_action_failed else R.string.spam_action_done)
+            }
 
         // Delete the conversation
         view.confirmDeleteIntent

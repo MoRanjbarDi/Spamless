@@ -118,8 +118,11 @@
 
         <com.moez.QKSMS.common.widget.QkTextView
             style="@style/PreferenceCategory"
-            android:text="@string/encoding_scheme" />
+            android:text="@string/encryption_protocol" />
 
+        <com.moez.QKSMS.common.widget.QkTextView
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:padding="16dp" android:text="@string/encryption_protocol_summary" />
         <RadioGroup
             android:id="@+id/encodingSchemes"
             android:layout_width="match_parent"

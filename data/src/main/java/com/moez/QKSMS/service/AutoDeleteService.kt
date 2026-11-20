@@ -24,10 +24,11 @@ class AutoDeleteService : JobService() {
 
         @SuppressLint("MissingPermission") // Added in [presentation]'s AndroidManifest.xml
         fun scheduleJob(context: Context) {
+            if (context.jobScheduler.allPendingJobs.any { it.id == JobId && it.intervalMillis == TimeUnit.HOURS.toMillis(1) }) return
             Timber.i("Scheduling job")
             val serviceComponent = ComponentName(context, AutoDeleteService::class.java)
             val periodicJob = JobInfo.Builder(JobId, serviceComponent)
-                    .setPeriodic(TimeUnit.DAYS.toMillis(1))
+                    .setPeriodic(TimeUnit.HOURS.toMillis(1))
                     .setPersisted(true)
                     .build()
 
@@ -47,16 +48,17 @@ class AutoDeleteService : JobService() {
     override fun onStartJob(params: JobParameters?): Boolean {
         Timber.i("onStartJob")
         AndroidInjection.inject(this)
-        disposables += deleteOldMessages
-        deleteOldMessages.execute(Unit) {
-            jobFinished(params, false)
-        }
+        disposables.clear()
+        disposables += deleteOldMessages.buildObservable(Unit)
+            .subscribeOn(io.reactivex.schedulers.Schedulers.io())
+            .observeOn(io.reactivex.android.schedulers.AndroidSchedulers.mainThread())
+            .subscribe({}, { error -> Timber.w(error); jobFinished(params, true) }, { jobFinished(params, false) })
         return true
     }
 
     override fun onStopJob(params: JobParameters?): Boolean {
         Timber.i("onStopJob")
-        disposables.dispose()
+        disposables.clear()
         return true
     }
 }

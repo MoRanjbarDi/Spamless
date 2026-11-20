@@ -35,6 +35,9 @@ open class Message : RealmObject() {
     // Negative for the app-only Spam partition; contentId/getUri always address the real SMS.
     @Index var threadId: Long = 0
 
+    /** App-local Trash timestamp. Zero means this message is active. */
+    @Index var deletedAt: Long = 0
+
     // The MMS-SMS content provider returns messages where duplicate ids can exist. This is because
     // SMS and MMS are stored in separate tables. We can't use these ids as our realm message id
     // since it's our primary key for the single message object, so we'll store the original id in

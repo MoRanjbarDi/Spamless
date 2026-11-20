@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+    android:background="?attr/selectableItemBackground" android:clickable="true" android:focusable="true" android:padding="16dp">
+    <com.moez.QKSMS.common.widget.QkTextView android:id="@+id/trashSender" style="@style/TextPrimary"
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:textStyle="bold" />
+    <com.moez.QKSMS.common.widget.QkTextView android:id="@+id/trashBody" style="@style/TextPrimary"
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp"
+        android:maxLines="3" android:ellipsize="end" />
+    <com.moez.QKSMS.common.widget.QkTextView android:id="@+id/trashExpiry" style="@style/TextSecondary"
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" />
+</LinearLayout>

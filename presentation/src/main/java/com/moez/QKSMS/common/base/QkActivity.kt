@@ -49,6 +49,16 @@ abstract class QkActivity : AppCompatActivity() {
 
     override fun setContentView(layoutResID: Int) {
         super.setContentView(layoutResID)
+        if (android.os.Build.VERSION.SDK_INT >= 35) {
+            val content = findViewById<android.view.View>(android.R.id.content)
+            content.setOnApplyWindowInsetsListener { view, insets ->
+                val bars = insets.getInsets(android.view.WindowInsets.Type.systemBars() or android.view.WindowInsets.Type.displayCutout())
+                val keyboard = insets.getInsets(android.view.WindowInsets.Type.ime())
+                view.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, keyboard.bottom))
+                insets
+            }
+            content.requestApplyInsets()
+        }
         setSupportActionBar(toolbar)
         title = title // The title may have been set before layout inflation
     }

@@ -44,7 +44,37 @@ buildscript {
         google()
     }
 
+    def sdkProperties = new Properties()
+    def sdkPropertiesFile = rootProject.file('local.properties')
+    if (sdkPropertiesFile.exists()) sdkPropertiesFile.withInputStream { sdkProperties.load(it) }
+    def sdkDirectory = sdkProperties.getProperty('sdk.dir') ?: System.getenv('ANDROID_SDK_ROOT') ?: System.getenv('ANDROID_HOME')
     dependencies {
+        if (sdkDirectory) {
+            def sourceD8 = new File(sdkDirectory, 'build-tools/36.0.0/lib/d8.jar')
+            if (sourceD8.exists()) {
+                // SDK 36 contains Java 21 CLI launchers alongside its Java 11 D8 API.
+                // Gradle 6 can load the API after those unused launchers are excluded.
+                def compatibleD8 = rootProject.file('.gradle/spamless-toolchain/d8-gradle.jar')
+                def stamp = rootProject.file('.gradle/spamless-toolchain/d8-source.txt')
+                def sourceStamp = "${sourceD8.absolutePath}:${sourceD8.length()}:${sourceD8.lastModified()}"
+                if (!compatibleD8.exists() || !stamp.exists() || stamp.text != sourceStamp) {
+                    compatibleD8.parentFile.mkdirs()
+                    new java.util.zip.ZipFile(sourceD8).withCloseable { input ->
+                        new java.util.zip.ZipOutputStream(new FileOutputStream(compatibleD8)).withCloseable { output ->
+                            input.entries().each { entry ->
+                                if (!entry.name.startsWith('com/android/tools/r8wrappers/')) {
+                                    output.putNextEntry(new java.util.zip.ZipEntry(entry.name))
+                                    if (!entry.directory) input.getInputStream(entry).withCloseable { output << it }
+                                    output.closeEntry()
+                                }
+                            }
+                        }
+                    }
+                    stamp.text = sourceStamp
+                }
+                classpath files(compatibleD8)
+            }
+        }
         classpath 'com.android.tools.build:gradle:3.5.4'
         classpath 'com.google.firebase:firebase-crashlytics-gradle:2.4.1'
         classpath 'com.google.gms:google-services:4.2.0'
@@ -54,6 +84,15 @@ buildscript {
 }
 
 allprojects {
+    def sdkProperties = new Properties()
+    def localSdkProperties = rootProject.file('local.properties')
+    if (localSdkProperties.exists()) localSdkProperties.withInputStream { sdkProperties.load(it) }
+    def sdkLocation = sdkProperties.getProperty('sdk.dir') ?: System.getenv('ANDROID_SDK_ROOT') ?: System.getenv('ANDROID_HOME')
+    if (sdkLocation) {
+        def executable = System.getProperty('os.name').toLowerCase().contains('windows') ? 'aapt2.exe' : 'aapt2'
+        def modernAapt = new File(sdkLocation, "build-tools/36.0.0/${executable}")
+        if (modernAapt.exists()) ext.set('android.aapt2FromMavenOverride', modernAapt.absolutePath)
+    }
     repositories {
         mavenCentral()
         google()

@@ -84,8 +84,6 @@ class SettingsPresenter @Inject constructor(
                 .map { millis -> dateFormatter.getTimestamp(millis) }
                 .subscribe { nightEnd -> newState { copy(nightEnd = nightEnd) } }
 
-        disposables += prefs.black.asObservable()
-                .subscribe { black -> newState { copy(black = black) } }
 
         disposables += prefs.notifications().asObservable()
                 .subscribe { enabled -> newState { copy(notificationsEnabled = enabled) } }
@@ -155,6 +153,15 @@ class SettingsPresenter @Inject constructor(
                 .distinctUntilChanged()
                 .subscribe { syncProgress -> newState { copy(syncProgress = syncProgress) } }
 
+        disposables += prefs.spamAutoDelete.asObservable()
+                .subscribe { days -> newState { copy(spamAutoDelete = days) } }
+        disposables += prefs.trashEnabled.asObservable().subscribe { enabled -> newState { copy(trashEnabled = enabled) } }
+        disposables += prefs.trashRetentionDays.asObservable().subscribe { days -> newState { copy(trashRetentionDays = days) } }
+        disposables += prefs.defaultInboxTab.asObservable().subscribe { tab -> newState { copy(defaultInboxTab = tab.coerceIn(0, 2)) } }
+        // Existing Trash must still expire after Trash is disabled for new deletions.
+        AutoDeleteService.scheduleJob(context)
+        disposables += prefs.trashRetentionDays.asObservable().skip(1).subscribe { deleteOldMessages.execute(Unit) }
+        disposables += deleteOldMessages
         disposables += syncMessages
     }
 
@@ -181,7 +188,7 @@ class SettingsPresenter @Inject constructor(
                             view.showEndTimePicker(date.get(Calendar.HOUR_OF_DAY), date.get(Calendar.MINUTE))
                         }
 
-                        R.id.black -> prefs.black.set(!prefs.black.get())
+
 
                         R.id.autoEmoji -> prefs.autoEmoji.set(!prefs.autoEmoji.get())
 
@@ -209,6 +216,7 @@ class SettingsPresenter @Inject constructor(
                         R.id.mobileOnly -> prefs.mobileOnly.set(!prefs.mobileOnly.get())
 
                         R.id.autoDelete -> view.showAutoDeleteDialog(prefs.autoDelete.get())
+                        R.id.spamAutoDelete -> view.showSpamAutoDeleteDialog(prefs.spamAutoDelete.get())
 
                         R.id.longAsMms -> prefs.longAsMms.set(!prefs.longAsMms.get())
 
@@ -282,32 +290,20 @@ class SettingsPresenter @Inject constructor(
                 .autoDisposable(view.scope())
                 .subscribe()
 
-        view.autoDeleteChanged()
+        io.reactivex.Observable.merge(
+                view.autoDeleteChanged().map { it.coerceAtLeast(0) to false },
+                view.spamAutoDeleteChanged().map { it.coerceAtLeast(0) to true })
                 .observeOn(Schedulers.io())
-                .filter { maxAge ->
-                    if (maxAge == 0) {
-                        return@filter true
-                    }
-
-                    val counts = messageRepo.getOldMessageCounts(maxAge)
-                    if (counts.values.sum() == 0) {
-                        return@filter true
-                    }
-
-                    runBlocking { view.showAutoDeleteWarningDialog(counts.values.sum()) }
+                .filter { (days, spamOnly) ->
+                    val count = if (days == 0) 0 else messageRepo.getOldMessageCounts(days, spamOnly).values.sum()
+                    count == 0 || runBlocking { view.showAutoDeleteWarningDialog(count) }
                 }
-                .doOnNext { maxAge ->
-                    when (maxAge == 0) {
-                        true -> AutoDeleteService.cancelJob(context)
-                        false -> {
-                            AutoDeleteService.scheduleJob(context)
-                            deleteOldMessages.execute(Unit)
-                        }
-                    }
-                }
-                .doOnNext(prefs.autoDelete::set)
                 .autoDisposable(view.scope())
-                .subscribe()
+                .subscribe { (days, spamOnly) ->
+                    // Save first so immediate cleanup uses the newly selected retention period.
+                    if (spamOnly) prefs.spamAutoDelete.set(days) else prefs.autoDelete.set(days)
+                    if (days > 0) deleteOldMessages.execute(Unit)
+                }
 
         view.mmsSizeSelected()
                 .autoDisposable(view.scope())

@@ -84,23 +84,11 @@ class SyncRepositoryImpl @Inject constructor(
         val realm = Realm.getDefaultInstance()
         realm.beginTransaction()
 
+        // Match provider identities, not app IDs, because a full sync rebuilds app IDs.
+        val trashed = realm.where(Message::class.java).greaterThan("deletedAt", 0L)
+            .findAll().associate { (it.type to it.contentId) to it.deletedAt }
         val persistedData = realm.copyFromRealm(realm.where(Conversation::class.java)
-                .beginGroup()
-                .equalTo("archived", true)
-                .or()
-                .equalTo("blocked", true)
-                .or()
-                .equalTo("pinned", true)
-                .or()
-                .isNotEmpty("name")
-                .or()
-                .isNotNull("blockingClient")
-                .or()
-                .isNotEmpty("blockReason")
-                .endGroup()
-                .findAll())
-                .associateBy { conversation -> conversation.id }
-                .toMutableMap()
+            .greaterThan("id", 0L).findAll()).associateBy { it.id }.toMutableMap()
 
         realm.delete(Contact::class.java)
         realm.delete(ContactGroup::class.java)
@@ -142,6 +130,7 @@ class SyncRepositoryImpl @Inject constructor(
                     progress++
                     syncProgress.onNext(SyncRepository.SyncProgress.Running(max, progress, false))
                     val message = cursorToMessage.map(Pair(cursor, messageColumns)).apply {
+                        deletedAt = trashed[type to contentId] ?: 0L
                         if (isMms()) {
                             parts = RealmList<MmsPart>().apply {
                                 addAll(realm.where(MmsPart::class.java)
@@ -177,11 +166,14 @@ class SyncRepositoryImpl @Inject constructor(
                             blockingClient = persistedConversation.blockingClient
                             blockReason = persistedConversation.blockReason
                             encryptionKey = persistedConversation.encryptionKey
+                            encryptionEnabled = persistedConversation.encryptionEnabled
+                            legacyEncryptionEnabled = persistedConversation.legacyEncryptionEnabled
+                            encodingSchemeId = persistedConversation.encodingSchemeId
                             deleteEncryptedAfter = persistedConversation.deleteEncryptedAfter
                             deleteReceivedAfter = persistedConversation.deleteReceivedAfter
                             deleteSentAfter = persistedConversation.deleteSentAfter
                         }
-                        lastMessage = realm.where(Message::class.java)
+                        lastMessage = realm.where(Message::class.java).equalTo("deletedAt", 0L)
                                 .sort("date", Sort.DESCENDING)
                                 .equalTo("threadId", id)
                                 .findFirst()
@@ -212,6 +204,8 @@ class SyncRepositoryImpl @Inject constructor(
 
 
         realm.insert(SyncLog())
+        // Full imports already classified each message in CursorToMessage; build their folder rows once.
+        ConversationPartitions.update(realm, realm.where(Conversation::class.java).greaterThan("id", 0L).findAll().map { it.id })
         realm.commitTransaction()
         realm.close()
 
@@ -242,7 +236,7 @@ class SyncRepositoryImpl @Inject constructor(
                     .equalTo("type", type)
                     .equalTo("contentId", id)
                     .findFirst()
-                    ?.id
+                    ?.let { it.id to it.deletedAt }
         }
 
         // The uri might be something like content://mms/inbox/id
@@ -259,7 +253,7 @@ class SyncRepositoryImpl @Inject constructor(
 
             val columnsMap = CursorToMessage.MessageColumns(cursor)
             cursorToMessage.map(Pair(cursor, columnsMap)).apply {
-                existingId?.let { this.id = it }
+                existingId?.let { this.id = it.first; this.deletedAt = it.second }
 
                 if (isMms()) {
                     parts = RealmList<MmsPart>().apply {
@@ -275,30 +269,76 @@ class SyncRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun syncContacts() {
-        // Load all the contacts
-        var contacts = getContacts()
+    private val contactSyncLock = Any()
 
-        Realm.getDefaultInstance()?.use { realm ->
+    override fun syncContacts() = synchronized(contactSyncLock) {
+        // Resolve provider data and phone-number matches before acquiring Realm's write lock.
+        val contacts = getContacts()
+        val groups = getContactGroups(contacts)
+        val byKey = contacts.associateBy { it.lookupKey }
+        fun addressKey(address: String): String = android.telephony.PhoneNumberUtils.normalizeNumber(address)
+            .takeIf { address.none(Char::isLetter) } ?: address.trim().lowercase(java.util.Locale.ROOT)
+        val exact = mutableMapOf<String, Contact>()
+        val suffixes = mutableMapOf<String, MutableList<Pair<String, Contact>>>()
+        contacts.forEach { contact -> contact.numbers.forEach { number ->
+            exact.getOrPut(addressKey(number.address)) { contact }
+            val digits = number.address.filter(Char::isDigit)
+            if (digits.length >= 7 && number.address.none(Char::isLetter))
+                suffixes.getOrPut(digits.takeLast(7)) { mutableListOf() }.add(number.address to contact)
+        } }
+        fun findContact(address: String): String? {
+            exact[addressKey(address)]?.let { return it.lookupKey }
+            if (address.any(Char::isLetter)) return null
+            val digits = address.filter(Char::isDigit)
+            if (digits.length < 7) return null
+            return suffixes[digits.takeLast(7)]?.firstOrNull { phoneNumberUtils.compare(address, it.first) }?.second?.lookupKey
+        }
+        Realm.getDefaultInstance().use { realm ->
+            realm.refresh()
+            val stored = realm.where(Contact::class.java).findAll().associateBy { it.lookupKey }
+            fun sameContact(old: Contact, fresh: Contact): Boolean =
+                old.name == fresh.name && old.photoUri == fresh.photoUri && old.starred == fresh.starred &&
+                    old.lastUpdate == fresh.lastUpdate && old.numbers.size == fresh.numbers.size &&
+                    old.numbers.zip(fresh.numbers).all { (a,b) -> a.id == b.id && a.address == b.address &&
+                        a.type == b.type && a.accountType == b.accountType && a.isDefault == b.isDefault }
+            val changed = contacts.filter { fresh -> stored[fresh.lookupKey]?.let { !sameContact(it, fresh) } ?: true }
+            val removed = stored.keys - byKey.keys
             val recipients = realm.where(Recipient::class.java).findAll()
-
+            val links = recipients.mapNotNull { recipient ->
+                val key = findContact(recipient.address)
+                if (recipient.contact?.lookupKey != key) recipient.id to key else null
+            }
+            val oldGroups = realm.where(ContactGroup::class.java).findAll().associateBy { it.id }
+            val changedGroups = groups.filter { group -> oldGroups[group.id]?.let { old ->
+                old.title != group.title || old.contacts.map { it.lookupKey } != group.contacts.map { it.lookupKey }
+            } ?: true }
+            val removedGroups = oldGroups.keys - groups.map { it.id }.toSet()
+            if (changed.isEmpty() && removed.isEmpty() && links.isEmpty() && changedGroups.isEmpty() && removedGroups.isEmpty()) return@use
+            val numberIds = contacts.flatMap { it.numbers }.map { it.id }.toSet()
             realm.executeTransaction {
-                realm.delete(Contact::class.java)
-                realm.delete(ContactGroup::class.java)
-
-                contacts = realm.copyToRealmOrUpdate(contacts)
-                realm.insertOrUpdate(getContactGroups(contacts))
-
-                // Update all the recipients with the new contacts
-                recipients.forEach { recipient ->
-                    recipient.contact = contacts.find { contact ->
-                        contact.numbers.any { phoneNumberUtils.compare(recipient.address, it.address) }
+                changed.forEach { contact ->
+                    // Avoid traversing unchanged contacts when only a name/number has changed.
+                    realm.insertOrUpdate(contact)
+                }
+                removed.forEach { stored[it]?.deleteFromRealm() }
+                realm.where(PhoneNumber::class.java).findAll().createSnapshot().forEach { number ->
+                    if (number.id !in numberIds) number.deleteFromRealm()
+                }
+                changedGroups.forEach { group ->
+                    // Use managed contact references so inserting a group cannot rewrite the contact table.
+                    val target = oldGroups[group.id] ?: realm.createObject(ContactGroup::class.java, group.id)
+                    target.title = group.title
+                    target.contacts.clear()
+                    group.contacts.forEach { contact -> realm.where(Contact::class.java).equalTo("lookupKey", contact.lookupKey)
+                        .findFirst()?.let { target.contacts.add(it) } }
+                }
+                removedGroups.forEach { oldGroups[it]?.deleteFromRealm() }
+                links.forEach { (id, key) ->
+                    realm.where(Recipient::class.java).equalTo("id", id).findFirst()?.contact = key?.let {
+                        realm.where(Contact::class.java).equalTo("lookupKey", it).findFirst()
                     }
                 }
-
-                realm.insertOrUpdate(recipients)
             }
-
         }
     }
 
@@ -307,7 +347,7 @@ class SyncRepositoryImpl @Inject constructor(
             realm.where(PhoneNumber::class.java)
                     .equalTo("isDefault", true)
                     .findAll()
-                    .map { number -> number.id }
+                    .map { number -> number.id }.toSet()
         }
 
         return cursorToContact.getContactsCursor()
@@ -320,7 +360,7 @@ class SyncRepositoryImpl @Inject constructor(
                     contacts.value
                             .flatMap { it.numbers }
                             .forEach { number ->
-                                number.isDefault = defaultNumberIds.any { id -> id == number.id }
+                                number.isDefault = number.id in defaultNumberIds
                                 val duplicate = uniqueNumbers.find { other ->
                                     phoneNumberUtils.compare(number.address, other.address)
                                 }
@@ -348,10 +388,10 @@ class SyncRepositoryImpl @Inject constructor(
                 ?.map(cursorToContactGroup::map)
                 .orEmpty()
 
+        val membersByGroup = groupMembers.groupBy { it.groupId }
+        val byKey = contacts.associateBy { it.lookupKey }
         groups.forEach { group ->
-            group.contacts.addAll(groupMembers
-                    .filter { member -> member.groupId == group.id }
-                    .mapNotNull { member -> contacts.find { contact -> contact.lookupKey == member.lookupKey } })
+            group.contacts.addAll(membersByGroup[group.id].orEmpty().mapNotNull { byKey[it.lookupKey] })
         }
 
         return groups

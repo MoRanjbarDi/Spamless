@@ -24,6 +24,8 @@ import com.moez.QKSMS.repository.SyncRepository
 import io.realm.RealmResults
 
 data class MainState(
+    val refreshing: Boolean = false,
+    val inboxTab: InboxTab = InboxTab.ALL,
     val hasError: Boolean = false,
     val page: MainPage = Inbox(),
     val drawerOpen: Boolean = false,
@@ -36,6 +38,10 @@ data class MainState(
     val keysIsUnset: Boolean = true
 )
 
+enum class InboxTab(val contactsOnly: Boolean?) {
+    ALL(null), CONTACTS(true), NON_CONTACTS(false)
+}
+
 sealed class MainPage
 
 data class Inbox(
@@ -47,6 +53,8 @@ data class Inbox(
 ) : MainPage()
 
 data class Searching(
+    val spam: Boolean = false,
+    val archived: Boolean = false,
     val loading: Boolean = false,
     val data: List<SearchResult>? = null
 ) : MainPage()

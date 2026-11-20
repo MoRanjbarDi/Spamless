@@ -46,6 +46,7 @@ class ConversationInfoController(
     val threadId: Long = 0
 ) : QkController<ConversationInfoView, ConversationInfoState, ConversationInfoPresenter>(), ConversationInfoView {
 
+    @Inject lateinit var prefs: com.moez.QKSMS.util.Preferences
     @Inject lateinit var context: Context
     @Inject override lateinit var presenter: ConversationInfoPresenter
     @Inject lateinit var blockingDialog: BlockingDialog
@@ -140,9 +141,9 @@ class ConversationInfoController(
 
     override fun showDeleteDialog() {
         AlertDialog.Builder(activity!!)
-                .setTitle(R.string.dialog_delete_title)
-                .setMessage(resources?.getQuantityString(R.plurals.dialog_delete_message, 1))
-                .setPositiveButton(R.string.button_delete) { _, _ -> confirmDeleteSubject.onNext(Unit) }
+                .setTitle(com.moez.QKSMS.common.util.DeletionUi.title(prefs))
+                .setMessage(com.moez.QKSMS.common.util.DeletionUi.conversations(context, prefs, 1))
+                .setPositiveButton(com.moez.QKSMS.common.util.DeletionUi.button(prefs)) { _, _ -> confirmDeleteSubject.onNext(Unit) }
                 .setNegativeButton(R.string.button_cancel, null)
                 .show()
     }

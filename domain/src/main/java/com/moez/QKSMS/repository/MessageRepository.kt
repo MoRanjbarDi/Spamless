@@ -26,7 +26,7 @@ import java.io.File
 
 interface MessageRepository {
 
-    fun getMessages(threadId: Long, query: String = ""): RealmResults<Message>
+    fun getMessages(threadId: Long, query: String = "", includeSpam: Boolean = false): RealmResults<Message>
 
     fun getMessage(id: Long): Message?
 
@@ -100,16 +100,22 @@ interface MessageRepository {
 
     fun markDeliveryFailed(id: Long, resultCode: Int)
 
-    fun deleteMessages(vararg messageIds: Long)
+    fun deleteMessages(vararg messageIds: Long): List<Long>
+
+    fun restoreMessages(vararg messageIds: Long): List<Long>
+
+    fun permanentlyDeleteMessages(vararg messageIds: Long): List<Long>
+
+    fun purgeExpiredTrash(): List<Long>
 
     /**
      * Returns the number of messages older than [maxAgeDays] per conversation
      */
-    fun getOldMessageCounts(maxAgeDays: Int): Map<Long, Int>
+    fun getOldMessageCounts(maxAgeDays: Int, spamOnly: Boolean = false): Map<Long, Int>
 
     /**
      * Deletes all messages older than [maxAgeDays]
      */
-    fun deleteOldMessages(maxAgeDays: Int)
+    fun deleteOldMessages(maxAgeDays: Int, spamOnly: Boolean = false)
 
 }
