@@ -90,7 +90,7 @@ Spamless is an open-source Android SMS/MMS app built around three features: **te
 ### What makes Spamless different?
 
 - **Filtering by message content:** Matching messages move to Spam. Ordinary and promotional messages from the same sender can appear in separate folders.
-- **A built-in rule for Iranian promotional SMS:** Recognizes cancellation text using `11`, Persian `۱۱`, and Arabic-Indic `١١`. Rule matching runs on your device.
+- **A built-in rule for Iranian promotional SMS:** Recognizes cancellation text using repeated patterns. Rule matching runs on your device.
 - **Custom rules:** Add your own Java regular expression to match other unwanted message patterns.
 - **Three tabs below search:** All, Contacts, and Others help separate personal conversations from service messages and unsaved senders.
 - **Optional encryption:** Two people with a shared key can exchange encrypted message text.
