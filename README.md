@@ -3,17 +3,13 @@
 **پیامک‌های مرتب‌تر، تبلیغات کم‌صداتر، و رمزگذاری اختیاری متن پیام‌ها.**
 
 **A cleaner SMS inbox, quieter spam alerts, and optional message encryption.**
-
 <p align="center">
-  <a href="https://github.com/MoRanjbarDi/Spamless/releases/download/release/Spamless-1.2.0-release.apk">
-    <img
-      src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0NDAiIGhlaWdodD0iNzAiPjxyZWN0IHdpZHRoPSI0NDAiIGhlaWdodD0iNzAiIHJ4PSIxMiIgZmlsbD0iIzJlYTQ0ZiIvPjx0ZXh0IHg9IjIyMCIgeT0iNDQiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkRvd25sb2FkIFNwYW1sZXNzIDEuMjwvdGV4dD48L3N2Zz4="
-      alt="Download Spamless 1.2.0"
-      width="440"
-      height="70"
-    />
+  <a href="https://github.com/MoRanjbarDi/Spamless/releases/download/release/Spamless-1.2.0-release.apk"
+     style="display:inline-block;background-color:#2ea44f;color:white;padding:18px 45px;border-radius:10px;text-decoration:none;font-size:20px;font-weight:bold;">
+    ⬇ DOWNLOAD SPAMLESS 1.2.0
   </a>
 </p>
+
 **Disclaimer:** Spamless is a personal hobby project, and there are currently no plans to publish it on Google Play or other app stores. GitHub-only distribution is a choice, not a security warning. The source code is open for anyone to inspect, and spam filtering happens on your device. To make sure you’re getting an official build, download Spamless directly from the project’s GitHub Releases page.
 
 **یادداشت توسعه‌دهنده:** Spamless یک پروژه شخصی از فرط کلافکی از تعداد پیامک های تبلیغاتی بی در و پیکر است. هنوز اینقدر جدی نشده که بدانم قصد انتشار در بازارگاه های اپ مانند گوگل پلی را دارم یا نه یا در آینده چه اتفاقی می خواهد بیفتد؟ اما تمام مراحل ضد هرزنامه داخل گوشی شما اتفاق می افتد، هیچ مخزن آنلاین مشترکی برای کراود سورس سرشماره های تبلیغاتی یا اتفاقاتی از این دست که  Spamless را به یک برنامه متصل و وابسته به اینترنت تبدیل کند وجود ندارد. 
