@@ -4,6 +4,7 @@
 
 **A cleaner SMS inbox, quieter spam alerts, and optional message encryption.**
 
+[<u>⬇️ Download Spamless 1.2.0 for Android (APK)</u>](https://github.com/MoRanjbarDi/Spamless/releases/download/release/Spamless-1.2.0-release.apk)
 
 **Disclaimer:** Spamless is a personal hobby project, and there are currently no plans to publish it on Google Play or other app stores. GitHub-only distribution is a choice, not a security warning. The source code is open for anyone to inspect, and spam filtering happens on your device. To make sure you’re getting an official build, download Spamless directly from the project’s GitHub Releases page.
 
