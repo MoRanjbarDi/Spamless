@@ -3,10 +3,10 @@
 **پیامک‌های مرتب‌تر، تبلیغات کم‌صداتر، و رمزگذاری اختیاری متن پیام‌ها.**
 
 **A cleaner SMS inbox, quieter spam alerts, and optional message encryption.**
+
 <p align="center">
-  <a href="https://github.com/MoRanjbarDi/Spamless/releases/download/release/Spamless-1.2.0-release.apk"
-     style="display:inline-block;background-color:#2ea44f;color:white;padding:18px 45px;border-radius:10px;text-decoration:none;font-size:20px;font-weight:bold;">
-    ⬇ DOWNLOAD SPAMLESS 1.2.0
+  <a href="https://github.com/MoRanjbarDi/Spamless/releases/download/release/Spamless-1.2.2-release.apk">
+    <img src="download.svg" alt="Download Spamless 1.2.2" width="330">
   </a>
 </p>
 
